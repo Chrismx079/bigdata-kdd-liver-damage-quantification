@@ -3,6 +3,16 @@
 La entrada para Streamlit Community Cloud es `cloud_app.py`, en la rama `main`.
 `app.py` sigue siendo la entrada local y conserva su comportamiento original.
 
+Repositorio de referencia: `Chrismx079/bigdata-kdd-liver-damage-quantification`.
+Para alojamiento se usa su fork `I-say/bigdata-kdd-liver-damage-quantification`,
+porque Streamlit exige permisos de administrador del repositorio. Los cambios
+se realizan en el repositorio de referencia y se sincronizan al fork antes de
+publicarlos en la web. No editar ambas copias por separado.
+
+```bash
+gh repo sync I-say/bigdata-kdd-liver-damage-quantification --source Chrismx079/bigdata-kdd-liver-damage-quantification --branch main
+```
+
 La versión web muestra el contenido completo de la V1: estadísticas de la parte 0,
 los 20 casos procesados, sus imágenes, métricas, seguimiento y reportes existentes.
 No significa que estén procesadas todas las partes del dataset.
