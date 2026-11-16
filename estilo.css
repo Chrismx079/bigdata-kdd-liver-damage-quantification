@@ -1,0 +1,70 @@
+/* Estilos de CancerVerso. app.py carga este archivo al arrancar.
+   Colores: fondo #070B14, panel #0E1524, borde #1C2740, texto #E6EDF7, texto tenue #8A9BB8,
+            cian #22D3EE, rojo #FF3B5C, verde #34D399, ámbar #FBBF24 */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+html, body, .stMarkdown, button, input { font-family: 'Inter', system-ui, sans-serif; }
+.block-container { padding: 1.6rem 2.6rem 3rem; max-width: 1500px; }
+
+/* Se ocultan la barra lateral, la cabecera y el pie que trae Streamlit */
+[data-testid="stSidebar"], [data-testid="stHeader"], footer { display: none; }
+
+/* Marca de la barra superior */
+.marca { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.15rem; color: #E6EDF7; }
+.marca small { color: #8A9BB8; font-weight: 400; font-size: .8rem; margin-left: .4rem; }
+.acento { color: #22D3EE; }
+.linea { border-bottom: 1px solid #1C2740; margin: .6rem 0 1.5rem; }
+
+/* Título grande */
+.etiqueta { color: #22D3EE; font-size: .74rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.titulo { font-family: 'Sora', sans-serif; font-size: 3.4rem; font-weight: 700; line-height: 1.05; color: #E6EDF7; letter-spacing: -0.02em; }
+.titulo-organo { font-family: 'Sora', sans-serif; font-size: 2.6rem; font-weight: 700; color: #E6EDF7; letter-spacing: -0.02em; }
+.bajada { color: #8A9BB8; font-size: 1.1rem; margin: .7rem 0 0; max-width: 48rem; }
+
+/* Tarjetas de cifras */
+.kpi { background: #0E1524; border: 1px solid #1C2740; border-radius: 14px; padding: 1.05rem 1.2rem; height: 100%; }
+.kpi-num { font-family: 'Sora', sans-serif; font-size: 2.25rem; font-weight: 700; color: #E6EDF7; line-height: 1.1; }
+.kpi-num small { font-size: 1rem; color: #8A9BB8; font-weight: 500; margin-left: .2rem; }
+.kpi-txt { color: #8A9BB8; font-size: .84rem; margin-top: .3rem; }
+
+/* Paneles y textos de sección */
+.panel { background: #0E1524; border: 1px solid #1C2740; border-radius: 14px; padding: 1.1rem 1.25rem; }
+.titulo-sec { font-family: 'Sora', sans-serif; font-weight: 600; font-size: 1.05rem; color: #E6EDF7; margin: 0 0 .15rem; }
+.sub-sec { color: #8A9BB8; font-size: .84rem; margin: 0 0 .7rem; }
+.nota { color: #8A9BB8; font-size: .8rem; margin-top: .5rem; }
+.fuerte { color: #E6EDF7; font-weight: 600; }
+
+/* Aviso de valores provisionales */
+.aviso { background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.45); color: #FBBF24;
+         border-radius: 10px; padding: .6rem .9rem; font-size: .86rem; margin-bottom: 1rem; }
+
+/* Etiquetas "Disponible" / "Próximamente" */
+.chip { display: inline-block; padding: .2rem .65rem; border-radius: 999px; font-size: .74rem; font-weight: 600; vertical-align: middle; }
+.chip-on { background: rgba(34,211,238,.13); color: #22D3EE; border: 1px solid rgba(34,211,238,.4); }
+.chip-off { background: rgba(138,155,184,.1); color: #8A9BB8; border: 1px solid #1C2740; }
+
+/* Barra de avance de datos procesados */
+.progreso { background: #1C2740; border-radius: 999px; height: 9px; overflow: hidden; margin: .55rem 0 .4rem; }
+.progreso div { background: linear-gradient(90deg, #22D3EE, #60A5FA); height: 100%; border-radius: 999px; }
+
+/* Semáforo de HTB% */
+.semaforo { display: flex; align-items: center; gap: .7rem; margin-top: .2rem; }
+.luz { width: 15px; height: 15px; border-radius: 50%; background: #1C2740; }
+.luz-verde { background: #34D399; box-shadow: 0 0 14px #34D399; }
+.luz-ambar { background: #FBBF24; box-shadow: 0 0 14px #FBBF24; }
+.luz-rojo { background: #FF3B5C; box-shadow: 0 0 14px #FF3B5C; }
+.nivel { font-family: 'Sora', sans-serif; font-size: 1.15rem; font-weight: 700; }
+.texto-verde { color: #34D399; }
+.texto-ambar { color: #FBBF24; }
+.texto-rojo { color: #FF3B5C; }
+
+/* Botones */
+.stButton > button { border-radius: 10px; border: 1px solid #1C2740; background: #0E1524; color: #E6EDF7;
+                     font-weight: 500; padding: .5rem .8rem; transition: all .15s; }
+.stButton > button:hover { border-color: #22D3EE; color: #22D3EE; }
+.stButton > button[kind="primary"] { background: #22D3EE; color: #04202A; border-color: #22D3EE; font-weight: 600; }
+.stButton > button[kind="primary"]:hover { color: #04202A; filter: brightness(1.08); }
+
+[data-testid="stImage"] img { border-radius: 12px; border: 1px solid #1C2740; }
+.pie { color: #8A9BB8; font-size: .78rem; border-top: 1px solid #1C2740; margin-top: 2.4rem; padding-top: 1rem; }

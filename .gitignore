@@ -1,0 +1,19 @@
+# Datos: no se suben (licencia CC BY-NC-ND 4.0 y reportes de pacientes)
+datos/
+raw/
+procesados/
+stats/
+*.nii
+*.nii.gz
+*.npz
+*.csv
+*.tar.gz
+
+# Entorno y temporales
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+.streamlit/secrets.toml
