@@ -29,7 +29,7 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 - **Casos sin máscara:** 2 tomografías del dataset no traen máscaras y se excluyen de todas las cifras.
 - **Filtro de series:** solo entran series con cortes de 5 mm o menos, 50 cortes o más y píxel de 3 mm o menos.
 - **Filtro de mediciones poco confiables:** se marcan para revisar los tumores menores a 1 cm³ y los cambios de volumen de más de 10 veces entre dos estudios seguidos.
-- **Misma fase:** para cada paciente se compara siempre la misma fase del estudio (de preferencia portal venosa), porque el tumor se ve distinto según la fase.
+- **Misma fase:** para cada paciente se prefiere una misma fase del estudio en todas las fechas (de preferencia portal venosa), porque el tumor se ve distinto según la fase. Si en una fecha no hay CT en esa fase se usa el que exista y la columna `misma_fase` lo marca: en la parte 0, 188 de 441 pacientes con seguimiento mezclan fases. Para las curvas de la demostración solo se eligen pacientes con una sola fase.
 
 ## 3. Transformación
 

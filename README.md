@@ -65,7 +65,7 @@ Máscaras de tumor  ──┘
    `HTB% = volumen de tumor ÷ volumen de (hígado ∪ tumor) × 100`
    Se usa la unión porque TotalSegmentator a veces deja fuera del hígado los tumores grandes.
 4. **Control de calidad.** Se revisa que CT y máscaras estén alineados y se generan imágenes de los casos donde más del 10% del tumor quedó fuera de la máscara de hígado.
-5. **Seguimiento.** Para pacientes con 2 o más fechas se arma la curva de volumen tumoral, comparando siempre la misma fase del estudio.
+5. **Seguimiento.** Para pacientes con 2 o más fechas se arma la curva de volumen tumoral, prefiriendo la misma fase del estudio en todas las fechas. Si en una fecha no existe esa fase se usa la disponible y el paciente queda marcado en la columna `misma_fase` (en la parte 0, 253 de 441 pacientes conservan una sola fase). Los pacientes elegidos para la demostración sí mantienen una sola fase.
 6. **Dashboard.** La app solo lee las tablas y los volúmenes reducidos que dejó el notebook.
 
 El trabajo se reparte por paciente en 3 partes (una por cuenta de Colab) y al final se junta.

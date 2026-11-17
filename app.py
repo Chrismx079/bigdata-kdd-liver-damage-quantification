@@ -385,12 +385,18 @@ def vista_portada(datos):
     ])
     # Nota sobre la base de las cifras
     n_fuera = r["n_cts_dataset"] - r["n_cts"]
-    if "n_partes" in r:
+    if "parte" in r:
         # Los datos vienen de UNA parte del reparto del notebook (por ejemplo la parte 0 de 3), no del dataset completo
         st.markdown('<p class="nota"><span class="fuerte">Avance parcial: parte ' + str(r["parte"] + 1) + " de " + str(r["n_partes"])
                     + " del dataset.</span> Las cifras de esta pantalla son de los " + miles(r["n_cts"]) + " CT con máscaras de esa parte ("
                     + str(n_fuera) + " sin máscaras, excluidos). El dataset completo tiene 24,422 CT.</p>", unsafe_allow_html=True)
+    elif "n_partes" in r and r["union_completa"] == False:
+        # Los datos vienen de la UNIÓN de varias partes (sección 13 del notebook), pero todavía faltan partes por juntar
+        st.markdown('<p class="nota"><span class="fuerte">Avance parcial: ' + str(len(r["partes_incluidas"])) + " de " + str(r["n_partes"])
+                    + " partes del dataset unidas.</span> Las cifras de esta pantalla son de los " + miles(r["n_cts"]) + " CT con máscaras de esas partes ("
+                    + str(n_fuera) + " sin máscaras, excluidos). El dataset completo tiene 24,422 CT.</p>", unsafe_allow_html=True)
     else:
+        # Dataset completo: sin reparto, o con todas las partes ya unidas
         st.markdown('<p class="nota">Base de todas las cifras: los ' + miles(r["n_cts"]) + " CT que traen máscaras. El dataset publica "
                     + miles(r["n_cts_dataset"]) + "; " + str(n_fuera) + " no traen máscaras (" + ", ".join(r["casos_sin_mascara"])
                     + ") y se excluyen.</p>", unsafe_allow_html=True)
