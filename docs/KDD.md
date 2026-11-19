@@ -1,6 +1,6 @@
 # Proceso KDD de CancerVerso
 
-Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Databases) y dice, en cada una, qué se hizo, con qué y qué falta. Avance al 16 de noviembre de 2026.
+Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Databases) y dice, en cada una, qué se hizo, con qué y qué falta. Avance al 19 de noviembre de 2026.
 
 **Pregunta del proyecto:** ¿cuánto del hígado de un paciente está ocupado por tumor, y cómo cambia eso entre un estudio y el siguiente?
 
@@ -8,7 +8,7 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 |---|---|---|---|
 | 1. Selección | Elegir dataset, órgano y casos | Notebook, secciones 2, 3 y 6 | Hecho para la parte 0 |
 | 2. Preprocesamiento | Limpiar metadatos y filtrar series | Notebook, secciones 3, 5 y 6 | Hecho |
-| 3. Transformación | Medir máscaras, segmentar hígado, reducir volúmenes | Notebook, secciones 4, 8 y 9 | Hecho para 20 CTs |
+| 3. Transformación | Medir máscaras, segmentar hígado, reducir volúmenes | Notebook, secciones 4, 8 y 9 | Hecho para 1,909 CTs (parte 0) |
 | 4. Minería de datos | Modelo de deep learning y métricas | Notebook, sección 8 · U-Net pendiente | Parcial |
 | 5. Interpretación | Dashboard, control de calidad, seguimiento | `app.py` · Notebook, secciones 10 y 11 | Hecho para hígado |
 
@@ -52,12 +52,12 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 
 - **Modelo propio:** una U-Net 2D entrenada por el equipo (con MONAI) para segmentar el tumor hepático.
 - **Evaluación:** comparar la predicción de la U-Net con la anotación de los expertos usando el coeficiente Dice, con pacientes separados para entrenamiento y prueba.
-- **Requisito para entrenarla:** más CTs procesados. Con 20 no alcanza; la meta inmediata son 200 por parte.
+- **Datos para entrenarla:** ya hay 1,909 CTs de hígado procesados de 912 pacientes en la parte 0, suficientes para separar entrenamiento y prueba por paciente.
 
 ## 5. Interpretación y evaluación
 
 - **Dashboard (Streamlit):** portada con las cifras del dataset, menú de 13 órganos y página de hígado con visor de cortes, reconstrucción 3D, medidor de HTB% y curva de seguimiento.
-- **Control de calidad visual:** imágenes de todos los casos donde más del 10% del tumor quedó fuera de la máscara de hígado.
+- **Control de calidad visual:** imágenes de todos los casos donde más del 10% del tumor quedó fuera de la máscara de hígado. En la parte 0 son 353 de 1,909 CTs (18%); en esos casos el HTB% puede quedar bajo y conviene revisarlos.
 - **Límites que el propio dashboard declara:**
   - Los cortes del semáforo de HTB% (25% y 50%) son un criterio provisional del equipo, sin fuente clínica.
   - La regla de tendencia es una aproximación de RECIST, que mide diámetros y no volumen total.
@@ -72,14 +72,17 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 |---|---|
 | CTs con máscaras medidos (parte 0 de 3) | 8,273 |
 | Anotaciones de tumor en la parte 0 | 4,120 |
-| CTs de hígado procesados a detalle | 20 |
-| Datos de CT procesados | unos 2.8 GB |
+| CTs de hígado procesados a detalle | 1,909 (912 pacientes) |
+| Datos de CT procesados | 245 GB |
+| Pacientes con seguimiento (2 o más fechas) | 441 (146 con una sola fase y sin marcas de revisar) |
+| Seguimiento más largo | 3,497 días (unos 9.6 años) |
+| HTB% mediano | 1.1% (25 CTs arriba de 50%) |
 | Meta mínima / deseable | 300 GB / 1 TB |
 
 ## Siguientes pasos
 
-1. Terminar las partes 1 y 2 y procesar 200 CTs de hígado por parte.
-2. Juntar las tres partes (sección 13 del notebook) y actualizar las cifras del dashboard.
+1. Juntar las partes 1 y 2, que el equipo ya corrió (unos 385 CTs más), con la sección 13 del notebook. Con eso se llega a unos 295 GB.
+2. Actualizar las cifras del dashboard con la unión de las tres partes.
 3. Entrenar y evaluar la U-Net 2D de tumor hepático.
 4. Conectar la U-Net a la app.
 5. Activar más órganos.

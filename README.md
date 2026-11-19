@@ -75,18 +75,18 @@ Umbrales usados, marcados como **provisionales**:
 - Semáforo de HTB% en 25% y 50%: criterio del equipo, todavía sin fuente clínica.
 - Tendencia del volumen (+73% crece, −66% se reduce): equivalente en volumen de RECIST 1.1 (Eisenhauer et al., *Eur J Cancer*, 2009), que define +20% y −30% de diámetro.
 
-## 5. Avance al 16 de noviembre de 2026
+## 5. Avance al 19 de noviembre de 2026
 
 | Etapa | Estado |
 |---|---|
 | Medición de máscaras, parte 0 de 3 (8,273 CTs, 4,120 anotaciones de tumor) | Hecho |
-| Hígado a detalle: 20 CTs procesados (unos 2.8 GB de CT) | Hecho |
+| Hígado a detalle, parte 0: 1,909 CTs de 912 pacientes (245 GB de CT) | Hecho |
 | Dashboard V1 (portada, menú de órganos, hígado, seguimiento) | Hecho |
-| Partes 1 y 2, y 200 CTs de hígado por parte | En proceso |
+| Partes 1 y 2 (unos 385 CTs más, ya corridos por el equipo) | Falta juntarlas |
 | Modelo propio: U-Net 2D de segmentación de tumor hepático (MONAI) | Pendiente |
-| Meta de datos procesados: 300 GB (deseable 1 TB) | En proceso |
+| Meta de datos procesados: 300 GB (deseable 1 TB) | 245 GB con la parte 0 |
 
-Las capturas de la sección 2 muestran las cifras de la parte 0 (un tercio de los pacientes), no del dataset completo.
+Las cifras del dashboard son de la parte 0 (un tercio de los pacientes), no del dataset completo. El visor de cortes y 3D solo muestra los CTs cuyo `volumen.npz` se copió a `datos/procesados/higado`.
 
 El detalle por etapa del proceso KDD está en [docs/KDD.md](docs/KDD.md).
 

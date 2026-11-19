@@ -112,13 +112,17 @@ def cargar_tablas():
         if seguimiento_viejo:
             seguimiento = pd.DataFrame()
 
-    # GB de CT procesados: se suma el último estado "ok" de cada caso del checklist
+    # GB y número de CT procesados: se cuenta el último estado "ok" de cada caso del checklist
     gb = 0.0
+    n_procesados = 0
     if (STATS / "checklist_higado.csv").exists():
         checklist = pd.read_csv(STATS / "checklist_higado.csv").drop_duplicates("caso", keep="last")
-        gb = float(checklist[checklist["estado"] == "ok"]["gb_ct"].sum())
+        procesados = checklist[checklist["estado"] == "ok"]
+        gb = float(procesados["gb_ct"].sum())
+        n_procesados = len(procesados)
 
     return {"organos": organos, "resumen": resumen, "casos": casos, "seguimiento": seguimiento, "gb": gb,
+            "n_procesados": n_procesados,
             "seguimiento_viejo": seguimiento_viejo}
 
 
@@ -408,7 +412,8 @@ def vista_portada(datos):
                 '<span class="sub-sec" style="float:right"><span class="fuerte">' + f"{gb:,.1f}" + " GB</span> de " + str(META_GB)
                 + " GB · meta deseable " + miles(META_GB_DESEABLE) + " GB</span>"
                 '<div class="progreso"><div style="width:' + f"{ancho:.2f}" + '%"></div></div>'
-                '<span class="nota">' + str(len(datos["casos"])) + " tomografías de hígado procesadas en esta versión</span></div>",
+                '<span class="nota">' + miles(datos["n_procesados"]) + " tomografías de hígado procesadas · "
+                + str(len(datos["casos"])) + " disponibles en el visor</span></div>",
                 unsafe_allow_html=True)
 
     st.write("")
