@@ -65,7 +65,7 @@ Máscaras de tumor  ──┘
    `HTB% = volumen de tumor ÷ volumen de (hígado ∪ tumor) × 100`
    Se usa la unión porque TotalSegmentator a veces deja fuera del hígado los tumores grandes.
 4. **Control de calidad.** Se revisa que CT y máscaras estén alineados y se generan imágenes de los casos donde más del 10% del tumor quedó fuera de la máscara de hígado.
-5. **Seguimiento.** Para pacientes con 2 o más fechas se arma la curva de volumen tumoral, prefiriendo la misma fase del estudio en todas las fechas. Si en una fecha no existe esa fase se usa la disponible y el paciente queda marcado en la columna `misma_fase` (en la parte 0, 253 de 441 pacientes conservan una sola fase). Los pacientes elegidos para la demostración sí mantienen una sola fase.
+5. **Seguimiento.** Para pacientes con 2 o más fechas se arma la curva de volumen tumoral, prefiriendo la misma fase del estudio en todas las fechas. Si en una fecha no existe esa fase se usa la disponible y el paciente queda marcado en la columna `misma_fase` (con las 3 partes unidas, 688 de 1,258 pacientes conservan una sola fase). Los pacientes elegidos para la demostración sí mantienen una sola fase.
 6. **Dashboard.** La app solo lee las tablas y los volúmenes reducidos que dejó el notebook.
 
 El trabajo se reparte por paciente en 3 partes (una por cuenta de Colab) y al final se junta.
@@ -75,18 +75,18 @@ Umbrales usados, marcados como **provisionales**:
 - Semáforo de HTB% en 25% y 50%: criterio del equipo, todavía sin fuente clínica.
 - Tendencia del volumen (+73% crece, −66% se reduce): equivalente en volumen de RECIST 1.1 (Eisenhauer et al., *Eur J Cancer*, 2009), que define +20% y −30% de diámetro.
 
-## 5. Avance al 19 de noviembre de 2026
+## 5. Avance al 23 de noviembre de 2026
 
 | Etapa | Estado |
 |---|---|
-| Medición de máscaras, parte 0 de 3 (8,273 CTs, 4,120 anotaciones de tumor) | Hecho |
-| Hígado a detalle, parte 0: 1,909 CTs de 912 pacientes (245 GB de CT) | Hecho |
+| Medición de máscaras, 3 partes unidas (24,420 CTs, 12,529 anotaciones de tumor) | Hecho |
+| Hígado a detalle, 3 partes: 2,336 CTs de 1,319 pacientes (301 GB de CT) | Hecho |
 | Dashboard V1 (portada, menú de órganos, hígado, seguimiento) | Hecho |
-| Partes 1 y 2 (unos 385 CTs más, ya corridos por el equipo) | Falta juntarlas |
+| Unión de las partes 0, 1 y 2 (sección 13 del notebook) | Hecho |
 | Modelo propio: U-Net 2D de segmentación de tumor hepático (MONAI) | Pendiente |
-| Meta de datos procesados: 300 GB (deseable 1 TB) | 245 GB con la parte 0 |
+| Meta de datos procesados: 300 GB (deseable 1 TB) | 301 GB, meta mínima cumplida |
 
-Las cifras del dashboard son de la parte 0 (un tercio de los pacientes), no del dataset completo. El visor de cortes y 3D solo muestra los CTs cuyo `volumen.npz` se copió a `datos/procesados/higado`.
+Las estadísticas por órgano ya cubren el dataset completo (las 3 partes unidas). El hígado a detalle cubre 2,336 CTs, no todos los del dataset. El visor de cortes y 3D solo muestra los CTs cuyo `volumen.npz` se copió a `datos/procesados/higado`.
 
 El detalle por etapa del proceso KDD está en [docs/KDD.md](docs/KDD.md).
 

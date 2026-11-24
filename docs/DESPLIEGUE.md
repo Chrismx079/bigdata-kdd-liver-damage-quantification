@@ -13,9 +13,9 @@ publicarlos en la web. No editar ambas copias por separado.
 gh repo sync I-say/bigdata-kdd-liver-damage-quantification --source Chrismx079/bigdata-kdd-liver-damage-quantification --branch main
 ```
 
-La versión web muestra el contenido completo de la V1: estadísticas de la parte 0,
+La versión web muestra el contenido completo de la V1: estadísticas de las 3 partes unidas,
 los 20 casos procesados, sus imágenes, métricas, seguimiento y reportes existentes.
-No significa que estén procesadas todas las partes del dataset.
+El visor de cortes y 3D solo incluye esos 20 casos de demostración.
 
 ## Datos y acceso
 
