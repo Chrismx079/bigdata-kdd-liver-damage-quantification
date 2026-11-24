@@ -75,7 +75,7 @@ Umbrales usados, marcados como **provisionales**:
 - Semáforo de HTB% en 25% y 50%: criterio del equipo, todavía sin fuente clínica.
 - Tendencia del volumen (+73% crece, −66% se reduce): equivalente en volumen de RECIST 1.1 (Eisenhauer et al., *Eur J Cancer*, 2009), que define +20% y −30% de diámetro.
 
-## 5. Avance al 23 de noviembre de 2026
+## 5. Avance al 24 de noviembre de 2026
 
 | Etapa | Estado |
 |---|---|
@@ -83,12 +83,13 @@ Umbrales usados, marcados como **provisionales**:
 | Hígado a detalle, 3 partes: 2,336 CTs de 1,319 pacientes (301 GB de CT) | Hecho |
 | Dashboard V1 (portada, menú de órganos, hígado, seguimiento) | Hecho |
 | Unión de las partes 0, 1 y 2 (sección 13 del notebook) | Hecho |
-| Modelo propio: U-Net 2D de segmentación de tumor hepático (MONAI) | Pendiente |
+| Dataset 2D para el modelo: 180,238 cortes de 2,264 CTs, separados por paciente, en 90 shards (23.6 GB) | Hecho |
+| Modelo propio: U-Net 2D de hígado y tumor (MONAI), evaluada en pacientes nunca vistos: Dice tumor 0.65, Dice hígado 0.95, HTB% r = 0.85 | Hecho (GPU T4) |
 | Meta de datos procesados: 300 GB (deseable 1 TB) | 301 GB, meta mínima cumplida |
 
 Las estadísticas por órgano ya cubren el dataset completo (las 3 partes unidas). El hígado a detalle cubre 2,336 CTs, no todos los del dataset. El visor de cortes y 3D solo muestra los CTs cuyo `volumen.npz` se copió a `datos/procesados/higado`.
 
-El detalle por etapa del proceso KDD está en [docs/KDD.md](docs/KDD.md).
+El detalle por etapa del proceso KDD está en [docs/KDD.md](docs/KDD.md); la ingeniería de datos, en [docs/INGENIERIA.md](docs/INGENIERIA.md); y el diccionario y linaje de los datos, en [docs/DATOS.md](docs/DATOS.md).
 
 ## 6. Cómo correrlo
 
@@ -97,6 +98,11 @@ El detalle por etapa del proceso KDD está en [docs/KDD.md](docs/KDD.md).
 1. Abrir `notebooks/CancerVerso_V1.ipynb` en Colab.
 2. Entorno de ejecución → Ejecutar todo. Los resultados quedan en `MyDrive/Big data Zucco/`.
 3. Si Colab se desconecta, volver a ejecutar todo: lo ya hecho se salta.
+
+**Dataset para el modelo y U-Net (Google Colab):**
+
+1. `notebooks/CancerVerso_V2_datos_modelo.ipynb` (CPU con RAM amplia): inventario, validación, separación por paciente y shards en `MyDrive/Big data Zucco/dataset_modelo/v2/`.
+2. `notebooks/CancerVerso_V3_unet.ipynb` (GPU, de preferencia G4): verifica las huellas MD5, entrena la U-Net y la evalúa. Los resultados quedan en `MyDrive/Big data Zucco/modelos/unet_<gpu>/`.
 
 **Levantar la app (local):**
 
@@ -123,7 +129,12 @@ estilo.css                     estilos del dashboard
 requirements.txt               librerías de la app
 .streamlit/config.toml         tema oscuro de la app
 notebooks/CancerVerso_V1.ipynb preparación de datos (Colab)
+notebooks/CancerVerso_V2_datos_modelo.ipynb   dataset 2D para el modelo (Colab)
+notebooks/CancerVerso_V3_unet.ipynb           U-Net: entrenamiento y evaluación (Colab)
+notebooks/CancerVerso_V3_unet_corrida_T4.ipynb  primera corrida de la U-Net, con resultados
 docs/KDD.md                    proceso KDD del proyecto
+docs/DATOS.md                  diccionario de datos y linaje
+docs/INGENIERIA.md             cómo se procesaron los datos
 capturas/                      imágenes del dashboard
 ```
 
@@ -131,7 +142,7 @@ capturas/                      imágenes del dashboard
 
 **Siguiente versión**
 
-- Entrenar una U-Net 2D propia para segmentar tumor hepático y comparar su resultado con la anotación de los expertos (Dice).
+- Mejorar la U-Net en tumores chicos y medirla en una GPU G4.
 - Conectar el modelo a la app para que muestre la predicción junto a la anotación.
 - Activar más órganos en el menú.
 

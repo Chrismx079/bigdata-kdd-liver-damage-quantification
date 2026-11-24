@@ -1,6 +1,6 @@
 # Proceso KDD de CancerVerso
 
-Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Databases) y dice, en cada una, qué se hizo, con qué y qué falta. Avance al 23 de noviembre de 2026.
+Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Databases) y dice, en cada una, qué se hizo, con qué y qué falta. Avance al 24 de noviembre de 2026.
 
 **Pregunta del proyecto:** ¿cuánto del hígado de un paciente está ocupado por tumor, y cómo cambia eso entre un estudio y el siguiente?
 
@@ -8,8 +8,8 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 |---|---|---|---|
 | 1. Selección | Elegir dataset, órgano y casos | Notebook, secciones 2, 3 y 6 | Hecho (3 partes) |
 | 2. Preprocesamiento | Limpiar metadatos y filtrar series | Notebook, secciones 3, 5 y 6 | Hecho |
-| 3. Transformación | Medir máscaras, segmentar hígado, reducir volúmenes | Notebook, secciones 4, 8 y 9 | Hecho para 2,336 CTs (3 partes) |
-| 4. Minería de datos | Modelo de deep learning y métricas | Notebook, sección 8 · U-Net pendiente | Parcial |
+| 3. Transformación | Medir máscaras, segmentar hígado, reducir volúmenes; dataset 2D para la U-Net | V1, secciones 4, 8 y 9 · V2 | Hecho: 2,336 CTs; dataset 2D de 2,264 CTs |
+| 4. Minería de datos | TotalSegmentator + U-Net 2D propia (MONAI) y métricas | V1, sección 8 · V3 | Hecho (U-Net entrenada en T4) |
 | 5. Interpretación | Dashboard, control de calidad, seguimiento | `app.py` · Notebook, secciones 10 y 11 | Hecho para hígado |
 
 ---
@@ -48,11 +48,23 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 - **Patrones obtenidos:** estadísticas por órgano (porcentaje de CTs con tumor, volumen medio y mediano, edad y sexo por paciente) y curvas de volumen tumoral por paciente en el tiempo.
 - **Regla de tendencia:** un tumor "crece" si su volumen sube 73% o más y "se reduce" si baja 66% o más. Es el equivalente en volumen de RECIST 1.1 (+20% y −30% de diámetro).
 
-**Lo que falta**
+**Modelo propio: U-Net 2D (notebook V3)**
 
-- **Modelo propio:** una U-Net 2D entrenada por el equipo (con MONAI) para segmentar el tumor hepático.
-- **Evaluación:** comparar la predicción de la U-Net con la anotación de los expertos usando el coeficiente Dice, con pacientes separados para entrenamiento y prueba.
-- **Datos para entrenarla:** ya hay 2,336 CTs de hígado procesados de 1,319 pacientes (3 partes), suficientes para separar entrenamiento y prueba por paciente.
+- **Datos:** dataset 2D del notebook V2: 180,238 cortes con hígado de 2,264 CTs y 1,291 pacientes, separados **por paciente** en entrenamiento (904), validación (194) y prueba (193). Se excluyeron 72 CTs con píxel deformado (series adquiridas en otro plano). Detalle en [DATOS.md](DATOS.md).
+- **Modelo:** U-Net 2D de MONAI (6.5 millones de parámetros) que clasifica cada píxel como fondo, hígado o tumor. Pérdida Dice + entropía cruzada, precisión mixta.
+- **Entrenamiento:** 14 épocas en una GPU T4 (2 h 5 min); se guarda la época con mejor Dice de tumor en validación.
+- **Evaluación en prueba (346 CTs de pacientes que el modelo nunca vio):**
+
+| Métrica | Valor |
+|---|---|
+| Dice de hígado (global / mediana por CT) | 0.949 / 0.969 |
+| Dice de tumor (global / mediana por CT) | 0.653 / 0.521 |
+| Dice de tumor en tumores chicos / grandes (cuartil inferior / superior) | 0.13 / 0.74 |
+| HTB% predicho vs real (correlación) | 0.85 |
+| HTB% predicho vs real (error absoluto mediano) | 0.66 puntos |
+
+- **Lectura:** el hígado se segmenta casi perfecto; el tumor depende de su tamaño. El HTB%, la variable del proyecto, sale cerca del real en la mayoría de los CTs, pero el modelo subestima los casos con más de 40% de carga tumoral.
+- **Límites:** solo se evalúan cortes con hígado y la validación se usó para elegir la mejor época, así que las cifras son algo optimistas.
 
 ## 5. Interpretación y evaluación
 
@@ -77,10 +89,15 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 | Pacientes con seguimiento (2 o más fechas) | 1,258 (405 con una sola fase y sin marcas de revisar) |
 | Seguimiento más largo | 3,497 días (unos 9.6 años) |
 | HTB% mediano | 1.8% (40 CTs arriba de 50%) |
+| Dataset 2D para la U-Net | 180,238 cortes · 2,264 CTs · 23.6 GB en 90 shards |
+| U-Net en prueba | Dice tumor 0.65 · Dice hígado 0.95 · HTB% r = 0.85 |
 | Meta mínima / deseable | 300 GB / 1 TB |
 
 ## Siguientes pasos
 
-1. Entrenar y evaluar la U-Net 2D de tumor hepático.
-2. Conectar la U-Net a la app.
-3. Activar más órganos.
+1. Medir la G4 con el mismo notebook (benchmark y, si hay tiempo, reentrenar) para la comparación T4 vs G4.
+2. Conectar la U-Net a la app: mostrar la predicción junto a la anotación.
+3. Mejorar el tumor chico (más épocas, más peso a la clase tumor o entrada 2.5D con cortes vecinos).
+4. Activar más órganos.
+
+La ingeniería de datos (cómo se procesaron los 3.04 TB) está en [INGENIERIA.md](INGENIERIA.md).
