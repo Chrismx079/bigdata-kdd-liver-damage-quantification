@@ -1,6 +1,6 @@
 # Proceso KDD de CancerVerso
 
-Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Databases) y dice, en cada una, qué se hizo, con qué y qué falta. Avance al 24 de noviembre de 2026.
+Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Databases) y dice, en cada una, qué se hizo, con qué y qué falta. Avance al 25 de noviembre de 2026.
 
 **Pregunta del proyecto:** ¿cuánto del hígado de un paciente está ocupado por tumor, y cómo cambia eso entre un estudio y el siguiente?
 
@@ -10,7 +10,7 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 | 2. Preprocesamiento | Limpiar metadatos y filtrar series | Notebook, secciones 3, 5 y 6 | Hecho |
 | 3. Transformación | Medir máscaras, segmentar hígado, reducir volúmenes; dataset 2D para la U-Net | V1, secciones 4, 8 y 9 · V2 | Hecho: 2,336 CTs; dataset 2D de 2,264 CTs |
 | 4. Minería de datos | TotalSegmentator + U-Net 2D propia (MONAI) y métricas | V1, sección 8 · V3 | Hecho (U-Net entrenada en T4) |
-| 5. Interpretación | Dashboard, control de calidad, seguimiento | `app.py` · Notebook, secciones 10 y 11 | Hecho para hígado |
+| 5. Interpretación | Dashboard (con pestañas Modelo IA y Cómo lo hicimos), control de calidad, seguimiento | `app.py` · `resultados/` · Notebook, secciones 10 y 11 | Hecho para hígado |
 
 ---
 
@@ -68,7 +68,10 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 
 ## 5. Interpretación y evaluación
 
-- **Dashboard (Streamlit):** portada con las cifras del dataset, menú de 13 órganos y página de hígado con visor de cortes, reconstrucción 3D, medidor de HTB% y curva de seguimiento.
+- **Dashboard (Streamlit):** portada con las cifras del dataset, menú de 13 órganos y página de hígado con tres pestañas:
+  - **Paciente:** visor de cortes, reconstrucción 3D, medidor de HTB% y curva de seguimiento.
+  - **Modelo IA:** métricas de la U-Net en test, 4 cortes experto vs U-Net, HTB% real vs predicho, Dice por tamaño de tumor, curva de entrenamiento y dónde falla.
+  - **Cómo lo hicimos:** las 5 etapas del KDD, tamaño de los datos en cada etapa, reparto entre 4 cuentas, benchmark de lectura, precisión mixta y problemas resueltos.
 - **Control de calidad visual:** imágenes de todos los casos donde más del 10% del tumor quedó fuera de la máscara de hígado. Con las 3 partes son 445 de 2,336 CTs (19%); en esos casos el HTB% puede quedar bajo y conviene revisarlos.
 - **Límites que el propio dashboard declara:**
   - Los cortes del semáforo de HTB% (25% y 50%) son un criterio provisional del equipo, sin fuente clínica.
@@ -96,7 +99,7 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 ## Siguientes pasos
 
 1. Medir la G4 con el mismo notebook (benchmark y, si hay tiempo, reentrenar) para la comparación T4 vs G4.
-2. Conectar la U-Net a la app: mostrar la predicción junto a la anotación.
+2. Correr la U-Net en vivo en la app (hoy la pestaña Modelo IA muestra la evaluación ya hecha; Streamlit Cloud no tiene GPU).
 3. Mejorar el tumor chico (más épocas, más peso a la clase tumor o entrada 2.5D con cortes vecinos).
 4. Activar más órganos.
 

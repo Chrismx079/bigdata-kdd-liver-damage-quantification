@@ -48,7 +48,7 @@ def extraer_datos(contenido, destino):
 
 @st.cache_resource(show_spinner=False)
 def preparar_app(file_id, huella, clave_hex, version_app):
-    # version_app invalida esta copia si cambia app.py o estilo.css.
+    # version_app invalida esta copia si cambia app.py, estilo.css o algo de resultados/.
     with tempfile.TemporaryDirectory(prefix="cancerverso-descarga-") as descarga:
         cifrado = Path(descarga) / "datos.enc"
         resultado = gdown.download(id=file_id, output=str(cifrado), quiet=True, use_cookies=False)
@@ -65,6 +65,8 @@ def preparar_app(file_id, huella, clave_hex, version_app):
         extraer_datos(datos, destino)
         for nombre in ("app.py", "estilo.css"):
             shutil.copyfile(ORIGEN / nombre, destino / nombre)
+        # Resultados del modelo (métricas e imagen de ejemplo): vienen de GitHub, no del paquete cifrado
+        shutil.copytree(ORIGEN / "resultados", destino / "resultados")
     except Exception:
         entorno.cleanup()
         raise
@@ -88,7 +90,10 @@ def main():
         st.info("Abre el enlace completo que te compartió el equipo para acceder al proyecto.")
         st.stop()
 
-    version = hashlib.sha256((ORIGEN / "app.py").read_bytes() + (ORIGEN / "estilo.css").read_bytes()).hexdigest()
+    contenido = (ORIGEN / "app.py").read_bytes() + (ORIGEN / "estilo.css").read_bytes()
+    for archivo in sorted((ORIGEN / "resultados").iterdir()):
+        contenido = contenido + archivo.read_bytes()
+    version = hashlib.sha256(contenido).hexdigest()
     try:
         with st.spinner("Preparando CancerVerso. La primera apertura puede tardar un poco…"):
             entorno = preparar_app(

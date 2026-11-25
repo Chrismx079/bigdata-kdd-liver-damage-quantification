@@ -13,7 +13,7 @@ publicarlos en la web. No editar ambas copias por separado.
 gh repo sync I-say/bigdata-kdd-liver-damage-quantification --source Chrismx079/bigdata-kdd-liver-damage-quantification --branch main
 ```
 
-La versión web muestra el contenido completo de la V1: estadísticas de las 3 partes unidas,
+La versión web muestra el contenido completo de la V1 y los resultados de la U-Net (V3): estadísticas de las 3 partes unidas,
 los 20 casos procesados, sus imágenes, métricas, seguimiento y reportes existentes.
 El visor de cortes y 3D solo incluye esos 20 casos de demostración.
 
@@ -49,7 +49,8 @@ o compartir lo que ve. No debe interpretarse como protección contra copias.
 ## Operación
 
 - Configurar Python 3.12 e instalar `requirements.txt`.
-- Los archivos de entrada son `cloud_app.py`, `app.py` y `estilo.css`.
+- Los archivos de entrada son `cloud_app.py`, `app.py`, `estilo.css` y la carpeta `resultados/`
+  (métricas e imagen de la U-Net; viene de GitHub, no del paquete cifrado).
 - La primera apertura o un reinicio vuelve a descargar aproximadamente 54 MB.
 - Si Drive limita la descarga o el servidor está suspendido, la primera visita
   puede tardar o requerir reintentar. Drive no ofrece una garantía de disponibilidad.

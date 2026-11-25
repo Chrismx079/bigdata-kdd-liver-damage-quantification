@@ -68,3 +68,7 @@ html, body, .stMarkdown, button, input { font-family: 'Inter', system-ui, sans-s
 
 [data-testid="stImage"] img { border-radius: 12px; border: 1px solid #1C2740; }
 .pie { color: #8A9BB8; font-size: .78rem; border-top: 1px solid #1C2740; margin-top: 2.4rem; padding-top: 1rem; }
+
+/* Pestañas de la página de hígado (Paciente · Modelo IA · Cómo lo hicimos) */
+[role="tablist"] { gap: 1.6rem; margin-bottom: 1.2rem; }
+[role="tab"] p { font-family: 'Sora', sans-serif; font-size: 1.05rem !important; font-weight: 600; }

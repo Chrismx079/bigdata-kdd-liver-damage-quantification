@@ -17,6 +17,8 @@ CancerVerso es un dashboard en Streamlit que permite:
 - Ver las cifras generales del dataset CancerVerse y elegir un órgano en un **menú de 13 órganos**.
 - Para **hígado** (el órgano activo en esta versión): recorrer la tomografía corte por corte con el tumor marcado, ver el hígado y los tumores en **3D**, y medir la **carga tumoral hepática (HTB%)**.
 - Seguir a un mismo paciente **en el tiempo**: cómo cambia el volumen de su tumor entre estudios.
+- Ver el **modelo de deep learning** (pestaña *Modelo IA*): una U-Net 2D entrenada por el equipo que pinta hígado y tumor, con sus métricas en pacientes que nunca vio y cortes de ejemplo experto vs U-Net.
+- Ver **cómo se procesaron los datos** (pestaña *Cómo lo hicimos*): el proceso KDD, cuánto pesan los datos en cada etapa, el reparto del trabajo y los problemas que se resolvieron.
 
 Los otros 12 órganos ya muestran sus estadísticas y están marcados como "Próximamente".
 
@@ -33,6 +35,10 @@ Los otros 12 órganos ya muestran sus estadísticas y están marcados como "Pró
 | Seguimiento del paciente | Ficha de otro órgano |
 |---|---|
 | ![Seguimiento](capturas/05_seguimiento.png) | ![Órgano](capturas/06_organo_proximamente.png) |
+
+| Modelo IA (U-Net) | Cómo lo hicimos |
+|---|---|
+| ![Modelo IA](capturas/07_modelo_ia.png) | ![Cómo lo hicimos](capturas/08_como_lo_hicimos.png) |
 
 ## 3. Dataset
 
@@ -119,6 +125,14 @@ datos/stats/                 stats_organos.csv, resumen_dataset.json, casos_higa
 datos/procesados/higado/     una carpeta por CT, con su volumen.npz
 ```
 
+Los resultados del modelo sí vienen en el repositorio, en `resultados/` (cifras agregadas, sin IDs de pacientes):
+
+```
+resultados/unet_t4.json      métricas de la U-Net en test, bitácora de entrenamiento y HTB% real vs predicho
+resultados/ejemplos_test.png 4 cortes de test: experto vs U-Net (la misma imagen del notebook V3)
+resultados/proceso.json      cifras del proceso de datos (de docs/INGENIERIA.md)
+```
+
 Si solo se corrió una parte, los archivos de `stats/` salen con sufijo (`_parte0`); hay que copiarlos sin el sufijo. Con todas las partes, la sección 13 del notebook genera los archivos finales en `stats_union/`.
 
 ## 7. Estructura del repositorio
@@ -126,6 +140,8 @@ Si solo se corrió una parte, los archivos de `stats/` salen con sufijo (`_parte
 ```
 app.py                         dashboard de Streamlit
 estilo.css                     estilos del dashboard
+cloud_app.py                   entrada de la versión web (Streamlit Cloud)
+resultados/                    resultados de la U-Net y cifras del proceso que muestra la app
 requirements.txt               librerías de la app
 .streamlit/config.toml         tema oscuro de la app
 notebooks/CancerVerso_V1.ipynb preparación de datos (Colab)
@@ -135,6 +151,8 @@ notebooks/CancerVerso_V3_unet_corrida_T4.ipynb  primera corrida de la U-Net, con
 docs/KDD.md                    proceso KDD del proyecto
 docs/DATOS.md                  diccionario de datos y linaje
 docs/INGENIERIA.md             cómo se procesaron los datos
+docs/DEFENSA.md                preguntas y respuestas para presentar el proyecto
+docs/DESPLIEGUE.md             cómo se publica la versión web
 capturas/                      imágenes del dashboard
 ```
 
@@ -143,7 +161,7 @@ capturas/                      imágenes del dashboard
 **Siguiente versión**
 
 - Mejorar la U-Net en tumores chicos y medirla en una GPU G4.
-- Conectar el modelo a la app para que muestre la predicción junto a la anotación.
+- Correr la U-Net en vivo dentro de la app (hoy muestra la evaluación ya hecha, porque Streamlit Cloud no tiene GPU).
 - Activar más órganos en el menú.
 
 **Apoyo que nos ayudaría**

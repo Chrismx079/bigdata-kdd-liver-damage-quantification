@@ -5,10 +5,14 @@ Cómo correrla:
     pip install -r requirements.txt
     streamlit run app.py
 
-La app solo LEE lo que generó el notebook de Colab (CancerVerso_V1.ipynb).
+La app solo LEE lo que generaron los notebooks de Colab.
 Busca los datos en la carpeta "datos", junto a este archivo:
-    datos/stats/                 tablas CSV y JSON
-    datos/procesados/higado/     un volumen reducido por cada CT procesado
+    datos/stats/                 tablas CSV y JSON (notebook V1)
+    datos/procesados/higado/     un volumen reducido por cada CT procesado (notebook V1)
+Y los resultados del modelo en la carpeta "resultados" (esta sí va en GitHub, no trae datos de pacientes):
+    resultados/unet_t4.json      métricas de la U-Net en test (notebook V3)
+    resultados/ejemplos_test.png cortes de test: experto vs U-Net (notebook V3)
+    resultados/proceso.json      cifras del proceso de datos (docs/INGENIERIA.md)
 """
 import json
 from pathlib import Path
@@ -31,6 +35,7 @@ CARPETA_APP = Path(__file__).parent
 DATOS = CARPETA_APP / "datos"
 STATS = DATOS / "stats"
 PROC = DATOS / "procesados" / "higado"
+RESULTADOS = CARPETA_APP / "resultados"
 
 # Colores (los mismos que usa estilo.css)
 PANEL = "#0E1524"
@@ -124,6 +129,16 @@ def cargar_tablas():
     return {"organos": organos, "resumen": resumen, "casos": casos, "seguimiento": seguimiento, "gb": gb,
             "n_procesados": n_procesados,
             "seguimiento_viejo": seguimiento_viejo}
+
+
+@st.cache_data
+def cargar_resultados():
+    """Lee los resultados de la U-Net y las cifras del proceso. Devuelve None si falta algún archivo."""
+    if not (RESULTADOS / "unet_t4.json").exists() or not (RESULTADOS / "proceso.json").exists():
+        return None
+    modelo = json.loads((RESULTADOS / "unet_t4.json").read_text(encoding="utf-8"))
+    proceso = json.loads((RESULTADOS / "proceso.json").read_text(encoding="utf-8"))
+    return {"modelo": modelo, "proceso": proceso}
 
 
 @st.cache_data
@@ -367,6 +382,88 @@ def figura_seguimiento(curva, dia_actual, vol_actual):
     return fig
 
 
+def figura_htb_real_vs_modelo(puntos):
+    """Cada punto es un CT de test: HTB% real (experto) contra el HTB% que calcula la U-Net."""
+    real = puntos["htb_real"]
+    modelo = puntos["htb_pred"]
+    tope = max(max(real), max(modelo)) + 3
+    textos = []
+    for r, m in zip(real, modelo):
+        textos.append("Real: " + f"{r:.1f}" + "%<br>U-Net: " + f"{m:.1f}" + "%")
+    fig = go.Figure()
+    # Línea diagonal: si el modelo acertara exacto, todos los puntos caerían sobre ella
+    fig.add_trace(go.Scatter(x=[0, tope], y=[0, tope], mode="lines", hoverinfo="skip",
+                             line=dict(color=TENUE, width=1.5, dash="dash")))
+    fig.add_trace(go.Scatter(x=real, y=modelo, mode="markers", hovertext=textos, hoverinfo="text",
+                             marker=dict(size=8, color=CIAN, opacity=0.6, line=dict(color=PANEL, width=0.5))))
+    estilo_grafica(fig, 380)
+    fig.update_xaxes(title="HTB% real (experto)", gridcolor=BORDE, zeroline=False, range=[0, tope])
+    fig.update_yaxes(title="HTB% de la U-Net", gridcolor=BORDE, zeroline=False, range=[0, tope])
+    return fig
+
+
+def figura_dice_por_tamano(cuartiles):
+    """Dice de tumor (mediana por CT) según el tamaño del tumor, en 4 grupos del mismo número de CTs."""
+    nombres = []
+    valores = []
+    colores = []
+    for fila in cuartiles:
+        nombres.append(fila["nombre"])
+        valores.append(fila["dice_tumor_mediana"])
+        if fila["dice_tumor_mediana"] < 0.3:
+            colores.append(ROJO)
+        elif fila["dice_tumor_mediana"] < 0.6:
+            colores.append(AMBAR)
+        else:
+            colores.append(VERDE)
+    fig = go.Figure(go.Bar(x=nombres, y=valores, marker_color=colores, text=[f"{v:.2f}" for v in valores],
+                           textposition="outside", textfont=dict(color=TEXTO), hoverinfo="skip"))
+    estilo_grafica(fig, 380)
+    fig.update_xaxes(title="Tamaño del tumor")
+    fig.update_yaxes(title="Dice de tumor (mediana)", gridcolor=BORDE, range=[0, 1])
+    return fig
+
+
+def figura_entrenamiento(bitacora, mejor_epoca):
+    """Dice en validación época por época, para hígado y tumor. El rombo marca la época que se guardó."""
+    epocas = []
+    hig = []
+    tum = []
+    for fila in bitacora:
+        epocas.append(fila["epoca"] + 1)              # se cuentan desde 1 para que se lea más fácil
+        hig.append(fila["dice_val_higado"])
+        tum.append(fila["dice_val_tumor"])
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=epocas, y=hig, mode="lines+markers", name="Hígado", line=dict(color=CIAN, width=2.5)))
+    fig.add_trace(go.Scatter(x=epocas, y=tum, mode="lines+markers", name="Tumor", line=dict(color=ROJO, width=2.5)))
+    fig.add_trace(go.Scatter(x=[mejor_epoca + 1], y=[tum[mejor_epoca]], mode="markers", name="Modelo guardado",
+                             marker=dict(symbol="diamond", size=15, color=TEXTO)))
+    estilo_grafica(fig, 320)
+    fig.update_layout(showlegend=True, legend=dict(orientation="h", y=1.12, x=0))
+    fig.update_xaxes(title="Época", gridcolor=BORDE, dtick=1)
+    fig.update_yaxes(title="Dice en validación", gridcolor=BORDE, range=[0.5, 1])
+    return fig
+
+
+def figura_barras_log(nombres, valores, unidad, colores):
+    """Barras horizontales en escala logarítmica (sirve cuando los valores van de muy chicos a muy grandes)."""
+    textos = []
+    for v in valores:
+        if v >= 100:
+            textos.append(f"{v:,.0f}" + " " + unidad)       # 3040 -> "3,040"
+        elif v >= 1:
+            textos.append(f"{v:,.1f}" + " " + unidad)       # 23.6 -> "23.6"
+        else:
+            textos.append(f"{v:.3f}" + " " + unidad)        # 0.026 -> "0.026"
+    fig = go.Figure(go.Bar(y=nombres, x=valores, orientation="h", marker_color=colores, text=textos,
+                           textposition="outside", textfont=dict(color=TEXTO), hoverinfo="skip"))
+    estilo_grafica(fig, 60 + 48 * len(nombres))
+    fig.update_xaxes(type="log", gridcolor=BORDE, showticklabels=False, range=[np.log10(min(valores)) - 0.5,
+                                                                             np.log10(max(valores)) + 0.9])
+    fig.update_yaxes(autorange="reversed")
+    return fig
+
+
 # ───────────────────────── 5. Pantalla: portada ─────────────────────────
 def vista_portada(datos):
     organos = datos["organos"]
@@ -495,10 +592,22 @@ def vista_organo(datos, clave):
 
 # ───────────────────────── 7. Pantalla: hígado ─────────────────────────
 def vista_higado(datos):
-    casos = datos["casos"]
     barra_superior(True)
     encabezado_organo(datos["organos"].loc["liver"], True)
     st.write("")
+    # La página de hígado tiene 3 pestañas: los datos de un paciente, lo que hace la IA y cómo se llegó ahí
+    pestana_1, pestana_2, pestana_3 = st.tabs(["Paciente", "Modelo IA", "Cómo lo hicimos"])
+    resultados = cargar_resultados()
+    with pestana_1:
+        pestana_paciente(datos)
+    with pestana_2:
+        pestana_modelo(resultados)
+    with pestana_3:
+        pestana_proceso(datos, resultados)
+
+
+def pestana_paciente(datos):
+    casos = datos["casos"]
     if len(casos) == 0:
         st.info("Todavía no hay tomografías de hígado procesadas. Corre el notebook de Colab y copia la carpeta "
                 "`procesados/higado` dentro de `datos`.")
@@ -615,7 +724,172 @@ def vista_higado(datos):
             st.write(estudio["reporte"])
 
 
-# ───────────────────────── 8. Arranque ─────────────────────────
+# ───────────────────────── 8. Pestaña: modelo IA ─────────────────────────
+def pestana_modelo(resultados):
+    if resultados is None:
+        st.info("No encontré los resultados del modelo. Revisa que exista la carpeta `resultados` junto a app.py.")
+        return
+    m = resultados["modelo"]
+    t = m["test"]
+
+    st.markdown('<p class="titulo-sec">U-Net: una red neuronal que pinta hígado y tumor</p>'
+                '<p class="sub-sec" style="font-size:.92rem;line-height:1.6;max-width:60rem">Modelo de <span class="fuerte">deep learning</span> '
+                "(" + m["modelo"] + ", " + str(m["parametros_millones"]) + " millones de parámetros). Recibe un corte de la tomografía y "
+                "clasifica cada píxel como fondo, hígado o tumor. Con esos píxeles se calcula el HTB% = tumor ÷ hígado. "
+                "Se entrenó con " + miles(m["pacientes"]["train"]) + " pacientes y se evalúa aquí con "
+                '<span class="fuerte">'
+                + miles(m["cts"]["test"]) + " CTs de " + miles(m["pacientes"]["test"]) + " pacientes que el modelo nunca vio</span>.</p>",
+                unsafe_allow_html=True)
+    tarjetas([
+        (f"{t['dice_global_higado']:.2f}", "Dice de hígado (1 = perfecto)", ""),
+        (f"{t['dice_global_tumor']:.2f}", "Dice de tumor", ""),
+        (f"{t['htb_correlacion']:.2f}", "correlación del HTB% U-Net vs experto", ""),
+        (f"{t['htb_error_absoluto_mediano']:.2f}", "error mediano del HTB%", "puntos"),
+        (miles(m["cortes"]["test"]), "cortes predichos en " + f"{t['segundos_prediccion']:.0f}" + " s (GPU T4)", ""),
+    ])
+    st.markdown('<p class="nota"><span class="fuerte">Dice</span> mide cuánto se enciman lo que pinta el modelo y lo que pintó el experto: '
+                "2 × (píxeles en común) ÷ (píxeles del modelo + píxeles del experto). 1 es perfecto y 0 es nada en común.</p>",
+                unsafe_allow_html=True)
+
+    # ── Fila 1: cortes de ejemplo ──
+    st.write("")
+    st.markdown('<p class="titulo-sec">Experto vs U-Net en 4 cortes de test</p><p class="sub-sec">Arriba lo que anotó el experto; abajo lo que '
+                "predijo la U-Net. Cian: hígado. Rojo: tumor. Los cortes se eligieron al azar con semilla fija entre los que tienen tumor.</p>",
+                unsafe_allow_html=True)
+    st.image(str(RESULTADOS / "ejemplos_test.png"), width="stretch")
+    st.markdown('<p class="nota">Se ve lo bueno y lo malo: el hígado sale casi igual; en el primer corte el modelo casi no marca el tumor de arriba, '
+                "en el segundo pinta el tumor más grande de lo que es y en el tercero se le escapa la lesión chica.</p>",
+                unsafe_allow_html=True)
+
+    # ── Fila 2: HTB% real vs modelo | Dice por tamaño ──
+    st.write("")
+    izquierda, derecha = st.columns(2, gap="large")
+    with izquierda:
+        st.markdown('<p class="titulo-sec">HTB% del modelo contra el real</p><p class="sub-sec">Cada punto es un CT de test. '
+                    "Si el modelo acertara exacto, todo caería sobre la línea punteada.</p>", unsafe_allow_html=True)
+        st.plotly_chart(figura_htb_real_vs_modelo(m["puntos_test"]), width="stretch", config={"displayModeBar": False})
+    with derecha:
+        st.markdown('<p class="titulo-sec">El tamaño del tumor importa</p><p class="sub-sec">Dice de tumor según su tamaño '
+                    "(4 grupos con el mismo número de CTs).</p>", unsafe_allow_html=True)
+        st.plotly_chart(figura_dice_por_tamano(m["dice_por_tamano"]), width="stretch", config={"displayModeBar": False})
+
+    # ── Fila 3: entrenamiento | dónde falla ──
+    st.write("")
+    izquierda, derecha = st.columns(2, gap="large")
+    with izquierda:
+        st.markdown('<p class="titulo-sec">Cómo aprendió</p><p class="sub-sec">' + str(m["epocas"]) + " épocas en " + f"{m['segundos_entrenamiento'] / 3600:.1f}" + " h, en una GPU "
+                    + m["gpu"] + " con precisión " + m["precision"] + ". Se guarda la época con mejor Dice de tumor "
+                    "en validación.</p>", unsafe_allow_html=True)
+        st.plotly_chart(figura_entrenamiento(m["bitacora"], m["mejor_epoca"]), width="stretch", config={"displayModeBar": False})
+    with derecha:
+        st.markdown('<p class="titulo-sec">Dónde falla</p><p class="sub-sec">Error del HTB% según cuánta carga tumoral tiene el CT. '
+                    "Diferencia negativa = el modelo se queda corto.</p>", unsafe_allow_html=True)
+        tabla = pd.DataFrame(m["htb_por_rango"])
+        tabla.columns = ["HTB% real", "CTs", "Error mediano (puntos)", "Diferencia mediana (puntos)"]
+        st.dataframe(tabla, hide_index=True, width="stretch")
+        st.markdown('<div class="panel" style="margin-top:.6rem"><p class="sub-sec" style="font-size:.88rem;line-height:1.6;margin:0">'
+                    '<span class="fuerte">Lectura.</span> En la mayoría de los CTs (carga baja) el error es de menos de medio punto. '
+                    "Con más de 40% de carga tumoral el modelo subestima mucho: hay pocos casos así para aprender. "
+                    "Los tumores chicos casi no los encuentra (Dice 0.13).<br><br>"
+                    '<span class="fuerte">Límites.</span> Solo se evalúan cortes que tienen hígado, y la validación se usó para elegir la mejor época, '
+                    "así que las cifras son algo optimistas. La app muestra la evaluación ya hecha: Streamlit Cloud no tiene GPU para correr el modelo en vivo."
+                    "</p></div>", unsafe_allow_html=True)
+
+
+# ───────────────────────── 9. Pestaña: cómo lo hicimos ─────────────────────────
+def pestana_proceso(datos, resultados):
+    if resultados is None:
+        st.info("No encontré las cifras del proceso. Revisa que exista la carpeta `resultados` junto a app.py.")
+        return
+    p = resultados["proceso"]
+    m = resultados["modelo"]
+
+    st.markdown('<p class="titulo-sec">El problema: 3.04 TB que no caben en Colab</p>'
+                '<p class="sub-sec" style="font-size:.92rem;line-height:1.6;max-width:60rem">El dataset completo pesa 3.04 TB y solo teníamos '
+                "Google Colab (una GPU T4, un disco que se borra y sesiones que se cortan solas) y Google Drive, que es lento con muchos archivos chicos. "
+                "Todo lo que sigue sale de esa restricción.</p>", unsafe_allow_html=True)
+    tarjetas([
+        ("3.04", "tamaño del dataset original", "TB"),
+        (f"{datos['gb']:,.1f}", "de CT de hígado procesados (meta: " + str(META_GB) + " GB)", "GB"),
+        (miles(datos["n_procesados"]), "tomografías de hígado procesadas", ""),
+        ("~55", "de proceso en Colab, repartidas en 4 cuentas", "h"),
+        (miles(m["cortes"]["train"] + m["cortes"]["val"] + m["cortes"]["test"]), "cortes 2D para entrenar la U-Net", ""),
+    ])
+
+    # ── Las 5 etapas del KDD ──
+    st.write("")
+    st.markdown('<p class="titulo-sec">Proceso KDD en 5 etapas</p>', unsafe_allow_html=True)
+    etapas = [
+        ("1. Selección", "CancerVerse (24,422 CTs, 13 órganos). Se eligió hígado: el órgano con más tumores anotados (6,540)."),
+        ("2. Preprocesamiento", "Fechas, edad y sexo limpios; solo series de 5 mm o menos. Fuera 72 CTs con píxel deformado."),
+        ("3. Transformación", "Máscara de hígado con TotalSegmentator, HTB% sobre el CT completo y volumen reducido ~50 veces."),
+        ("4. Minería", "U-Net 2D propia (MONAI) entrenada para pintar hígado y tumor píxel por píxel."),
+        ("5. Interpretación", "Este dashboard: visor, 3D, seguimiento por paciente y evaluación del modelo."),
+    ]
+    columnas = st.columns(5)
+    for columna, (titulo, texto) in zip(columnas, etapas):
+        columna.markdown('<div class="panel" style="height:100%"><p class="titulo-sec" style="color:#22D3EE">' + titulo + "</p>"
+                         '<p class="sub-sec" style="margin:0;line-height:1.5">' + texto + "</p></div>", unsafe_allow_html=True)
+
+    # ── Fila: tamaño por etapa | reparto del trabajo ──
+    st.write("")
+    izquierda, derecha = st.columns([3, 2], gap="large")
+    with izquierda:
+        st.markdown('<p class="titulo-sec">Cuánto pesan los datos en cada etapa</p><p class="sub-sec">Escala logarítmica: '
+                    "cada marca es 10 veces más. Del dataset de 3 TB al modelo de 26 MB.</p>", unsafe_allow_html=True)
+        nombres = []
+        valores = []
+        for fila in p["tamanos"]:
+            nombres.append(fila["etapa"] + "<br><span style='font-size:11px'>" + fila["detalle"] + "</span>")
+            valores.append(fila["gb"])
+        colores = [TENUE, CIAN, CIAN, CIAN, CIAN, ROJO]
+        st.plotly_chart(figura_barras_log(nombres, valores, "GB", colores), width="stretch", config={"displayModeBar": False})
+    with derecha:
+        st.markdown('<p class="titulo-sec">Trabajo repartido en 4 cuentas</p><p class="sub-sec">Los pacientes se reparten con el hash MD5 '
+                    "de su ID: todos los estudios de un paciente caen en la misma parte y su seguimiento no se rompe.</p>", unsafe_allow_html=True)
+        reparto = pd.DataFrame(p["reparto"])
+        reparto.columns = ["Parte", "Quién", "CTs"]
+        st.dataframe(reparto, hide_index=True, width="stretch")
+        st.markdown('<p class="nota"><span class="fuerte">Prueba de reproducibilidad:</span> 173 CTs se procesaron dos veces, en cuentas distintas. '
+                    "El HTB% difirió como máximo 0.01 puntos.</p>", unsafe_allow_html=True)
+
+    # ── Fila: velocidad de lectura | GPU ──
+    st.write("")
+    izquierda, derecha = st.columns([3, 2], gap="large")
+    with izquierda:
+        st.markdown('<p class="titulo-sec">Por qué shards: velocidad de lectura</p><p class="sub-sec">Cortes por segundo (promedio de 2 corridas, '
+                    "escala logarítmica). Leer de Drive archivo por archivo era 15 a 70 veces más lento que cualquier otra forma.</p>",
+                    unsafe_allow_html=True)
+        nombres = []
+        valores = []
+        for fila in p["lectura"]:
+            nombres.append(fila["forma"])
+            valores.append(fila["cortes_s"])
+        colores = [ROJO, CIAN, CIAN, CIAN, VERDE]
+        st.plotly_chart(figura_barras_log(nombres, valores, "cortes/s", colores), width="stretch", config={"displayModeBar": False})
+    with derecha:
+        st.markdown('<p class="titulo-sec">Precisión mixta en la GPU</p><p class="sub-sec">Mismo modelo y lote de 24 en la T4.</p>',
+                    unsafe_allow_html=True)
+        fp32 = p["gpu"][0]
+        fp16 = p["gpu"][1]
+        tarjetas([
+            (str(fp32["cortes_s"]), "cortes/s en fp32 · " + str(fp32["memoria_gb"]) + " GB", ""),
+            (str(fp16["cortes_s"]), "cortes/s en fp16 · " + str(fp16["memoria_gb"]) + " GB", ""),
+        ])
+        st.markdown('<p class="nota">Con precisión mixta entrena ' + f"{fp16['cortes_s'] / fp32['cortes_s']:.1f}" + " veces más rápido y usa menos memoria. "
+                    "Los cortes se guardan en uint8 (4 veces menos que float32) y se pasan a 0–1 ya dentro de la GPU.</p>", unsafe_allow_html=True)
+
+    # ── Problemas y soluciones ──
+    st.write("")
+    st.markdown('<p class="titulo-sec">Lo que salió mal y cómo se resolvió</p>', unsafe_allow_html=True)
+    problemas = pd.DataFrame(p["problemas"])
+    problemas.columns = ["Problema", "Qué pasó", "Solución"]
+    st.dataframe(problemas, hide_index=True, width="stretch")
+    st.markdown('<p class="nota">Detalle completo, con todas las cifras medidas: docs/INGENIERIA.md y docs/KDD.md en el repositorio del proyecto.</p>',
+                unsafe_allow_html=True)
+
+
+# ───────────────────────── 10. Arranque ─────────────────────────
 datos = cargar_tablas()
 if datos is None:
     st.error("No encontré los datos en la carpeta `datos`. Corre el notebook de Colab y copia ahí las carpetas `stats` y `procesados`.")
@@ -631,4 +905,4 @@ else:
 
 st.markdown('<div class="pie">Prototipo académico. No es un dispositivo médico ni sustituye el diagnóstico de un especialista. '
             "Datos: CancerVerse (BodyMaps, Johns Hopkins University), licencia CC BY-NC-ND 4.0. "
-            "Máscara de hígado: TotalSegmentator 2.18.0.</div>", unsafe_allow_html=True)
+            "Máscara de hígado: TotalSegmentator 2.18.0. Modelo: U-Net 2D de MONAI entrenada por el equipo.</div>", unsafe_allow_html=True)

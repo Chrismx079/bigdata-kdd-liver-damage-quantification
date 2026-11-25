@@ -1,0 +1,123 @@
+{
+ "_nota": "Cifras del proceso de datos, copiadas de docs/INGENIERIA.md (avance al 24 nov 2026). Lectura: promedio de 2 corridas. Si cambian allá, cambiarlas aquí.",
+ "tamanos": [
+  {
+   "etapa": "Dataset original",
+   "detalle": "24,422 CTs + máscaras",
+   "gb": 3040
+  },
+  {
+   "etapa": "CTs de hígado procesados",
+   "detalle": "2,336 CTs bajados, segmentados y medidos",
+   "gb": 300.9
+  },
+  {
+   "etapa": "Dataset 2D para la U-Net",
+   "detalle": "180,238 cortes en 90 shards",
+   "gb": 23.6
+  },
+  {
+   "etapa": "Volúmenes reducidos",
+   "detalle": "un volumen.npz por CT (~50 veces menos)",
+   "gb": 6.0
+  },
+  {
+   "etapa": "Máscaras de los 13 órganos",
+   "detalle": "medidas sin bajar ningún CT",
+   "gb": 0.55
+  },
+  {
+   "etapa": "Modelo entrenado",
+   "detalle": "mejor.pt",
+   "gb": 0.026
+  }
+ ],
+ "reparto": [
+  {
+   "parte": "Parte 0",
+   "quien": "Isay",
+   "cts": 1909
+  },
+  {
+   "parte": "Parte 0",
+   "quien": "Paloma",
+   "cts": 200
+  },
+  {
+   "parte": "Parte 1",
+   "quien": "Paul",
+   "cts": 200
+  },
+  {
+   "parte": "Parte 2",
+   "quien": "Christopher",
+   "cts": 200
+  }
+ ],
+ "lectura": [
+  {
+   "forma": "Archivos sueltos desde Drive",
+   "cortes_s": 81
+  },
+  {
+   "forma": "Archivos sueltos desde disco local",
+   "cortes_s": 1302
+  },
+  {
+   "forma": "Shards desde Drive",
+   "cortes_s": 1449
+  },
+  {
+   "forma": "Shards desde disco local",
+   "cortes_s": 2999
+  },
+  {
+   "forma": "Ya en RAM",
+   "cortes_s": 7216
+  }
+ ],
+ "gpu": [
+  {
+   "modo": "fp32",
+   "cortes_s": 148,
+   "memoria_gb": 1.5
+  },
+  {
+   "modo": "fp16 (precisión mixta)",
+   "cortes_s": 284,
+   "memoria_gb": 0.9
+  }
+ ],
+ "problemas": [
+  {
+   "problema": "Falta de RAM",
+   "que_paso": "TotalSegmentator falló 8 veces con 8 GB",
+   "solucion": "Entorno con RAM alta"
+  },
+  {
+   "problema": "Sesiones cortadas",
+   "que_paso": "Colab desconecta en horas",
+   "solucion": "Checklist reanudable y checkpoints por época"
+  },
+  {
+   "problema": "Archivos en otras cuentas",
+   "que_paso": "Colab solo ve \"Mi unidad\"",
+   "solucion": "Atajos de Drive a las carpetas de los compañeros"
+  },
+  {
+   "problema": "Imágenes aplastadas",
+   "que_paso": "72 CTs con píxel de hasta 10.4 × 1.3 mm",
+   "solucion": "Filtro medible en mm, con lista de excluidos"
+  },
+  {
+   "problema": "Drive lento con archivos chicos",
+   "que_paso": "~80 cortes/s leyendo archivo por archivo",
+   "solucion": "Shards sin comprimir, copiados al disco local"
+  },
+  {
+   "problema": "bf16 en la T4",
+   "que_paso": "La T4 lo emula y sería muy lento",
+   "solucion": "fp16 en T4; bf16 solo con capacidad de cómputo ≥ 8"
+  }
+ ]
+}
