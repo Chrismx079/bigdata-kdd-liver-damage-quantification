@@ -2,7 +2,7 @@
 
 Este documento cuenta **qué problemas de volumen de datos encontramos y cómo los resolvimos**, con las cifras medidas en cada paso. El diccionario de cada tabla y archivo está en [DATOS.md](DATOS.md); el proceso KDD completo, en [KDD.md](KDD.md).
 
-Avance al 24 de noviembre de 2026.
+Versión final, 25 de noviembre de 2026.
 
 ---
 
@@ -115,7 +115,6 @@ Lo estable entre corridas: **Drive archivo por archivo da ~80 cortes/s; cualquie
 |---|---|---|---|---|
 | T4 | fp32 | 24 | 148 | 1.5 GB |
 | T4 | fp16 (mixta) | 24 | 284 | 0.9 GB |
-| G4 | — | — | *pendiente* | — |
 
 - **Checkpoint en Drive cada época** (`ultimo.pt`) y del mejor modelo (`mejor.pt`): si Colab se corta, se retoma.
 - **Tope de tiempo** (120 min): termina la época en curso y se detiene, para no gastar de más.
@@ -132,7 +131,7 @@ Lo estable entre corridas: **Drive archivo por archivo da ~80 cortes/s; cualquie
 | Archivos en otras cuentas | Colab solo ve "Mi unidad" | Atajos de Drive en `companeros/` |
 | Imágenes aplastadas | 72 CTs con píxel de hasta 10.4 × 1.3 mm | Filtro medible en mm, con lista de excluidos |
 | bf16 en la T4 | PyTorch dice que la T4 "soporta" bf16, pero lo emula y sería muy lento | Elegir bf16 solo si la capacidad de cómputo es ≥ 8 (G4, A100, L4); en la T4, fp16 |
-| GPU no disponible | La G4 y la A100 no se asignaron en 3 intentos (más de 12 min cada uno) la noche del 24 nov | Entrenar en T4 y dejar el notebook listo para G4 (lote y precisión se ajustan solos; cada GPU guarda en su carpeta) |
+| GPU no disponible | La G4 y la A100 no se asignaron en 3 intentos (más de 12 min cada uno) la noche del 24 nov | Entrenar en la T4, que sí estaba disponible; el notebook ajusta solo el lote y la precisión a la GPU que toque |
 | Permiso de Drive | El montaje vence si nadie aprueba la ventana a tiempo | Volver a ejecutar; el notebook es reanudable |
 
 ---

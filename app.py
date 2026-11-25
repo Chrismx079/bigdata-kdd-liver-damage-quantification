@@ -449,12 +449,12 @@ def figura_barras_log(nombres, valores, unidad, colores):
     """Barras horizontales en escala logarítmica (sirve cuando los valores van de muy chicos a muy grandes)."""
     textos = []
     for v in valores:
-        if v >= 100:
-            textos.append(f"{v:,.0f}" + " " + unidad)       # 3040 -> "3,040"
+        if v >= 100 or v == round(v):
+            textos.append(f"{v:,.0f}" + " " + unidad)       # 3040 -> "3,040" y 81 -> "81"
         elif v >= 1:
             textos.append(f"{v:,.1f}" + " " + unidad)       # 23.6 -> "23.6"
         else:
-            textos.append(f"{v:.3f}" + " " + unidad)        # 0.026 -> "0.026"
+            textos.append(f"{v:.3g}" + " " + unidad)        # 0.55 -> "0.55" y 0.026 -> "0.026"
     fig = go.Figure(go.Bar(y=nombres, x=valores, orientation="h", marker_color=colores, text=textos,
                            textposition="outside", textfont=dict(color=TEXTO), hoverinfo="skip"))
     estilo_grafica(fig, 60 + 48 * len(nombres))

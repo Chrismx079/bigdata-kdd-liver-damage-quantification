@@ -1,6 +1,6 @@
 # Proceso KDD de CancerVerso
 
-Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Databases) y dice, en cada una, qué se hizo, con qué y qué falta. Avance al 25 de noviembre de 2026.
+Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Databases) y dice, en cada una, qué se hizo, con qué y qué falta. Versión final, 25 de noviembre de 2026.
 
 **Pregunta del proyecto:** ¿cuánto del hígado de un paciente está ocupado por tumor, y cómo cambia eso entre un estudio y el siguiente?
 
@@ -98,9 +98,8 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 
 ## Siguientes pasos
 
-1. Medir la G4 con el mismo notebook (benchmark y, si hay tiempo, reentrenar) para la comparación T4 vs G4.
-2. Correr la U-Net en vivo en la app (hoy la pestaña Modelo IA muestra la evaluación ya hecha; Streamlit Cloud no tiene GPU).
-3. Mejorar el tumor chico (más épocas, más peso a la clase tumor o entrada 2.5D con cortes vecinos).
-4. Activar más órganos.
+1. Correr la U-Net en vivo en la app (hoy la pestaña Modelo IA muestra la evaluación ya hecha; Streamlit Cloud no tiene GPU).
+2. Mejorar el tumor chico (más épocas, más peso a la clase tumor o entrada 2.5D con cortes vecinos).
+3. Activar más órganos.
 
 La ingeniería de datos (cómo se procesaron los 3.04 TB) está en [INGENIERIA.md](INGENIERIA.md).

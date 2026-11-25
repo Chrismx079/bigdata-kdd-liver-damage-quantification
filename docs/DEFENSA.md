@@ -1,6 +1,6 @@
 # Guía para defender CancerVerso
 
-Preguntas que nos pueden hacer en la presentación, con respuestas cortas y con las cifras reales. Todas las cifras salen de [KDD.md](KDD.md), [INGENIERIA.md](INGENIERIA.md) y [DATOS.md](DATOS.md). Avance al 25 de noviembre de 2026.
+Preguntas que nos pueden hacer en la presentación, con respuestas cortas y con las cifras reales. Todas las cifras salen de [KDD.md](KDD.md), [INGENIERIA.md](INGENIERIA.md) y [DATOS.md](DATOS.md). Versión final, 25 de noviembre de 2026.
 
 ---
 

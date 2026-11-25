@@ -2,7 +2,7 @@
 
 Este documento dice **qué datos existen en el proyecto, de dónde sale cada uno, qué significa cada columna y qué controles pasó**. Es la referencia para entender las tablas del notebook, la app y el dataset con el que se entrena la U-Net.
 
-Avance al 24 de noviembre de 2026 (03:45).
+Versión final, 25 de noviembre de 2026.
 
 > Los datos **no se suben a GitHub** (licencia CC BY-NC-ND 4.0 del dataset y reportes radiológicos en las tablas). Viven en Google Drive, en `MyDrive/Big data Zucco/`, y una copia de las tablas de la app en `datos/` de la carpeta local.
 
@@ -54,7 +54,7 @@ flowchart TD
 |---|---|---|
 | `notebooks/CancerVerso_V1.ipynb` | Secciones 1–13: metadatos, máscaras, selección, TotalSegmentator, HTB%, volúmenes reducidos, control de calidad y unión de las 3 partes | Colab (T4) de cada integrante |
 | `notebooks/CancerVerso_V2_datos_modelo.ipynb` | Inventario, validación, separación por paciente, dataset 2D en shards y benchmark de lectura | Colab de Isay (CPU con RAM amplia) |
-| `notebooks/CancerVerso_V3_unet.ipynb` | Benchmark de GPU, verificación MD5, entrenamiento de la U-Net y evaluación en test | Colab de Isay (G4; la primera corrida fue en T4: `CancerVerso_V3_unet_corrida_T4.ipynb`) |
+| `notebooks/CancerVerso_V3_unet.ipynb` | Benchmark de GPU, verificación MD5, entrenamiento de la U-Net y evaluación en test | Colab de Isay. La corrida entregada, con sus resultados, es `CancerVerso_V3_unet_corrida_T4.ipynb` (GPU T4) |
 
 **Reparto en 3 partes:** cada paciente cae en una parte según el hash MD5 de su ID, así que todos sus estudios quedan juntos. Parte 0: Isay (1,909 CTs) y Paloma (27 nuevos + 173 repetidos que sirvieron como prueba de reproducibilidad: diferencia máxima de HTB% de 0.01). Parte 1: Paul (200). Parte 2: Christopher (200).
 
@@ -73,7 +73,6 @@ En Drive, `MyDrive/Big data Zucco/`:
 | `dataset_modelo/v2/` | Shards del dataset 2D, `manifest.json` e `indice_cortes.csv` (versión vigente) |
 | `dataset_modelo/v1/` | Primera corrida, sin el filtro de píxel deformado (obsoleta) |
 | `modelos/unet_t4/` | U-Net entrenada en T4: `mejor.pt`, `ultimo.pt`, bitácoras, `test_por_caso.csv`, gráficas y `resumen.json` (sección 7) |
-| `modelos/unet_g4/` | Igual, cuando se entrene en G4 |
 
 En la carpeta local, `datos/stats/` tiene las tablas que lee la app (unión de las 3 partes) y `datos/procesados/` los volúmenes que muestra.
 
@@ -309,6 +308,6 @@ Algunas series se adquirieron en otro plano con cortes gruesos. Al verlas en vis
 1. Correr `CancerVerso_V1.ipynb` en Colab con GPU (cada integrante su parte; la sección 13 junta las partes).
 2. Crear en Drive los accesos directos de `companeros/` (instrucciones al inicio del notebook V2).
 3. Correr `CancerVerso_V2_datos_modelo.ipynb` con **Ejecutar todo** (CPU con RAM amplia basta; ~20 min).
-4. Correr `CancerVerso_V3_unet.ipynb` con GPU (de preferencia G4) y **Ejecutar todo**: verifica las huellas MD5, entrena y evalúa. Para solo medir una GPU, correr las secciones 1 y 2.
+4. Correr `CancerVerso_V3_unet.ipynb` con GPU (la corrida entregada fue en una T4) y **Ejecutar todo**: verifica las huellas MD5, entrena y evalúa. Para solo medir una GPU, correr las secciones 1 y 2.
 
 Con la misma semilla (42) sale la misma separación y los mismos shards.
