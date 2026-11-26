@@ -951,12 +951,7 @@ def pestana_proceso(datos, resultados):
         st.markdown('<p class="nota">Con precisión mixta entrena ' + f"{fp16['cortes_s'] / fp32['cortes_s']:.1f}" + " veces más rápido y usa menos memoria. "
                     "Los cortes se guardan en uint8 (4 veces menos que float32) y se pasan a 0–1 ya dentro de la GPU.</p>", unsafe_allow_html=True)
 
-    # ── Problemas y soluciones ──
     st.write("")
-    st.markdown('<p class="titulo-sec">Lo que salió mal y cómo se resolvió</p>', unsafe_allow_html=True)
-    problemas = pd.DataFrame(p["problemas"])
-    problemas.columns = ["Problema", "Qué pasó", "Solución"]
-    st.dataframe(problemas, hide_index=True, width="stretch")
     st.markdown('<p class="nota">Detalle completo, con todas las cifras medidas: docs/INGENIERIA.md y docs/KDD.md en el repositorio del proyecto.</p>',
                 unsafe_allow_html=True)
 
