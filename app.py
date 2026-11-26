@@ -836,10 +836,6 @@ def pestana_modelo(resultados):
     tumor = extra["por_clase"]["tumor"]
     corte = extra["por_corte"]
     trampa = extra["trampa_exactitud"]
-    cts_con_tumor = 0
-    for valor in m["puntos_test"]["htb_real"]:
-        if valor > 0:
-            cts_con_tumor += 1
     st.write("")
     st.markdown('<p class="titulo-sec">¿Cómo se equivoca? Matriz de confusión, precisión y recall</p>'
                 '<p class="sub-sec">Mismo modelo y mismo test. El Dice dice cuánto se enciman; estas medidas dicen '
@@ -847,9 +843,7 @@ def pestana_modelo(resultados):
     tarjetas([
         (f"{tumor['precision']:.2f}", "precisión de tumor: de lo que pintó, cuánto era tumor", ""),
         (f"{tumor['recall']:.2f}", "recall de tumor: del tumor que había, cuánto encontró", ""),
-        (f"{tumor['iou']:.2f}", "IoU de tumor (intersección ÷ unión)", ""),
         (f"{100 * corte['sensibilidad']:.0f}", "de los cortes con tumor, los que detectó", "%"),
-        (f"{100 * corte['especificidad']:.0f}", "de los cortes sin tumor, los que dejó en paz", "%"),
     ])
     st.write("")
     izquierda, derecha = st.columns(2, gap="large")
@@ -863,34 +857,16 @@ def pestana_modelo(resultados):
         clases = ["Fondo", "Hígado", "Tumor"]
         st.plotly_chart(figura_matriz(pct, textos, clases, clases, 340), width="stretch", config={"displayModeBar": False})
     with derecha:
-        st.markdown('<p class="titulo-sec">Corte por corte: ¿tiene tumor?</p><p class="sub-sec">' + miles(corte["cortes"])
-                    + " cortes de test. Cuenta como \"con tumor\" si hay al menos 1 píxel de tumor.</p>", unsafe_allow_html=True)
-        valores = [[corte["vp"], corte["fn"]], [corte["fp"], corte["vn"]]]
-        textos = [[miles(corte["vp"]) + "<br>acierta", miles(corte["fn"]) + "<br>se le escapa"],
-                  [miles(corte["fp"]) + "<br>falsa alarma", miles(corte["vn"]) + "<br>acierta"]]
-        st.plotly_chart(figura_matriz(valores, textos, ["Con tumor", "Sin tumor"], ["Con tumor", "Sin tumor"], 340),
-                        width="stretch", config={"displayModeBar": False})
-    # Tamaño de las falsas alarmas y qué pasa con otro umbral (sección 6b del notebook V3b)
-    texto_alarmas = ""
-    if "falsas_alarmas" in extra and "umbrales_corte" in extra:
-        con_50 = None
-        for fila in extra["umbrales_corte"]:
-            if fila["min_pixeles"] == 50:
-                con_50 = fila
-        texto_alarmas = ("<br><br>" + '<span class="fuerte">Las falsas alarmas son manchas chicas.</span> Basta 1 píxel para que un corte cuente como '
-                         "\"con tumor\", y la mitad de las falsas alarmas mide " + f"{extra['falsas_alarmas']['pixeles_mediana']:.0f}"
-                         + " píxeles o menos (de 65,536 que tiene el corte).")
-        if con_50 is not None:
-            texto_alarmas = (texto_alarmas + " Si se le exigen al menos 50 píxeles para avisar, la especificidad sube a "
-                             + f"{100 * con_50['especificidad']:.0f}" + "% y la sensibilidad baja a " + f"{100 * con_50['sensibilidad']:.0f}" + "%.")
-    st.markdown('<div class="panel" style="margin-top:.6rem"><p class="sub-sec" style="font-size:.88rem;line-height:1.6;margin:0">'
-                '<span class="fuerte">Por qué no usamos la exactitud.</span> Solo el ' + f"{trampa['pct_pixeles_tumor']:.1f}"
-                + "% de los píxeles es tumor. Un modelo que pintara todo como fondo tendría una exactitud de "
-                + f"{100 * trampa['exactitud_todo_fondo']:.1f}" + "% sin encontrar ni un tumor (la U-Net saca "
-                + f"{100 * trampa['exactitud_unet']:.1f}" + "%). Por eso medimos con Dice, precisión y recall.<br><br>"
-                '<span class="fuerte">Por qué por corte y no por CT.</span> Casi todos los CTs de test tienen tumor (' + str(cts_con_tumor) + ' de ' + str(len(m["puntos_test"]["htb_real"])) + '), '
-                "así que una matriz por CT casi no tendría casos sin tumor." + texto_alarmas + "</p></div>", unsafe_allow_html=True)
-
+        st.write("")
+        st.markdown('<div class="panel" style="margin-top:3.2rem"><p class="sub-sec" style="font-size:.88rem;line-height:1.6;margin:0">'
+                    '<span class="fuerte">Cómo se lee.</span> Casi todo el error está en la fila de tumor: el modelo sí lo encuentra dentro del hígado, '
+                    "pero parte del tumor lo pinta como hígado. Por eso el recall (" + f"{tumor['recall']:.2f}" + ") es menor que la precisión ("
+                    + f"{tumor['precision']:.2f}" + ").<br><br>"
+                    '<span class="fuerte">Por qué no usamos la exactitud.</span> Solo el ' + f"{trampa['pct_pixeles_tumor']:.1f}"
+                    + "% de los píxeles es tumor. Un modelo que pintara todo como fondo tendría una exactitud de "
+                    + f"{100 * trampa['exactitud_todo_fondo']:.1f}" + "% sin encontrar ni un tumor (la U-Net saca "
+                    + f"{100 * trampa['exactitud_unet']:.1f}" + "%). Por eso medimos con Dice, precisión y recall.</p></div>",
+                    unsafe_allow_html=True)
 
 # ───────────────────────── 9. Pestaña: cómo lo hicimos ─────────────────────────
 def pestana_proceso(datos, resultados):
