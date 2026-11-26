@@ -20,7 +20,7 @@ Proyecto de Big Data (proceso KDD) · Licenciatura en Inteligencia Artificial y 
 | Tiempo de proceso | ~55 h en Google Colab, repartidas en 4 cuentas |
 | Dataset para el modelo | 180,238 cortes 2D en 90 shards (23.6 GB), separados por paciente |
 | Modelo | U-Net 2D (deep learning, MONAI) entrenada por el equipo en una GPU T4 |
-| Resultado en pacientes nunca vistos | Dice hígado **0.95** · Dice tumor **0.65** · HTB% con correlación **0.85** |
+| Resultado en pacientes nunca vistos | Dice de tumor **0.65** (precisión 0.71 · recall 0.60) · Dice de hígado **0.95** · HTB% con correlación **0.85** |
 
 ---
 
@@ -33,7 +33,7 @@ CancerVerso es un dashboard en Streamlit que permite:
 - Ver las cifras generales del dataset CancerVerse y elegir un órgano en un **menú de 13 órganos**.
 - En **hígado**, el órgano con página completa, hay tres pestañas:
   - **Paciente:** recorrer la tomografía corte por corte con el tumor marcado, ver el hígado y los tumores en **3D**, medir la **carga tumoral hepática (HTB%)** y seguir al paciente **en el tiempo**.
-  - **Modelo IA:** la U-Net que entrenamos, con sus métricas en pacientes que nunca vio, cortes de ejemplo experto vs U-Net y dónde falla.
+  - **Modelo IA:** la U-Net que entrenamos, con sus métricas en pacientes que nunca vio, cortes de ejemplo referencia vs U-Net, matrices de confusión, precisión y recall, y dónde falla.
   - **Cómo lo hicimos:** el proceso KDD, cuánto pesan los datos en cada etapa, el reparto del trabajo, los benchmarks y los problemas que resolvimos.
 - Los otros 12 órganos muestran sus estadísticas, calculadas sobre el dataset completo.
 
@@ -61,13 +61,17 @@ La versión web está en `cancerverso-udg.streamlit.app` y es privada: se entra 
 
 ![Seguimiento](capturas/05_seguimiento.png)
 
-**Hígado › Modelo IA:** métricas de la U-Net y 4 cortes de prueba, experto arriba y U-Net abajo.
+**Hígado › Modelo IA:** métricas de la U-Net y 4 cortes de prueba, referencia arriba y U-Net abajo.
 
 ![Modelo IA](capturas/07_modelo_ia.png)
 
 **Hígado › Modelo IA:** HTB% del modelo contra el real, Dice por tamaño de tumor, curva de entrenamiento y dónde falla.
 
 ![Gráficas del modelo](capturas/09_modelo_graficas.png)
+
+**Hígado › Modelo IA:** matriz de confusión por píxel y por corte, precisión, recall e IoU.
+
+![Matrices de confusión](capturas/11_modelo_matrices.png)
 
 **Hígado › Cómo lo hicimos:** el problema, las 5 etapas del KDD, tamaño de los datos por etapa y reparto del trabajo.
 
@@ -118,6 +122,10 @@ El trabajo se repartió por paciente en 3 partes (hash MD5 del ID) entre 4 cuent
 
 **Notebook V3 (modelo):** U-Net 2D de MONAI (6.5 millones de parámetros) que clasifica cada píxel como fondo, hígado o tumor. Pérdida Dice + entropía cruzada, AdamW, precisión mixta fp16 en una T4. Se guarda la época con mejor Dice de tumor en validación y se evalúa en 346 CTs de 193 pacientes que el modelo nunca vio.
 
+**Notebook V3b (más métricas):** no entrena. Carga el mismo modelo y el mismo test y calcula la matriz de confusión por píxel (fondo, hígado, tumor), precisión, recall e IoU por clase, la matriz por corte (¿tiene tumor?) con sensibilidad y especificidad, el tamaño de las falsas alarmas y la exactitud de un modelo que pinta todo de fondo. Se corrió en una L4 (no había T4 libre); el Dice salió igual que en la V3 (hígado 0.949, tumor 0.652 contra 0.653).
+
+**Contra qué se califica (referencia):** el tumor, contra las máscaras de CancerVerse anotadas por radiólogos; el hígado, contra TotalSegmentator unido con el tumor, porque el dataset no trae máscara de hígado. La referencia es la mejor respuesta disponible, no la verdad absoluta.
+
 **App:** solo lee lo que dejaron los notebooks. No corre el modelo en vivo: muestra la evaluación ya hecha.
 
 Umbrales usados, marcados como **provisionales**:
@@ -145,8 +153,13 @@ Umbrales usados, marcados como **provisionales**:
 | Dice de tumor (global / mediana por CT) | 0.653 / 0.521 |
 | Dice de tumor, tumores chicos / grandes | 0.13 / 0.74 |
 | HTB% del modelo vs real: correlación / error mediano | 0.85 / 0.66 puntos |
+| Tumor por píxel: precisión / recall / IoU | 0.71 / 0.60 / 0.48 |
+| Hígado por píxel: precisión / recall / IoU | 0.94 / 0.95 / 0.90 |
+| Por corte, ¿tiene tumor?: sensibilidad / especificidad (1 píxel basta) | 95% / 48% |
+| Mismo, exigiendo al menos 50 píxeles | 76% / 83% |
+| Exactitud por píxel: U-Net / modelo que pinta todo de fondo | 99.3% / 93.2% |
 
-El hígado se segmenta casi perfecto. El tumor depende de su tamaño: las lesiones chicas son las difíciles. El HTB% sale cerca del real en la mayoría de los CTs, pero el modelo subestima los casos con más de 40% de carga tumoral.
+El hígado coincide casi perfecto con TotalSegmentator. El tumor depende de su tamaño: las lesiones chicas son las difíciles. El modelo se queda corto más de lo que inventa: lo que pinta como tumor casi siempre lo es (precisión 0.71), pero no pinta el 40% del tumor, y el 35% lo pinta como hígado. Por corte casi no deja pasar tumores, pero da falsas alarmas: la mitad mide 23 píxeles o menos de 65,536. La exactitud no se usa porque el tumor es solo el 0.5% de los píxeles. El HTB% sale cerca del real en la mayoría de los CTs, pero el modelo subestima los casos con más de 40% de carga tumoral.
 
 Detalle: proceso KDD en [docs/KDD.md](docs/KDD.md), ingeniería de datos en [docs/INGENIERIA.md](docs/INGENIERIA.md), diccionario y linaje en [docs/DATOS.md](docs/DATOS.md) y guía para presentar en [docs/DEFENSA.md](docs/DEFENSA.md).
 
@@ -162,6 +175,7 @@ Detalle: proceso KDD en [docs/KDD.md](docs/KDD.md), ingeniería de datos en [doc
 
 1. `notebooks/CancerVerso_V2_datos_modelo.ipynb` (CPU con RAM amplia): inventario, validación, separación por paciente y shards en `MyDrive/Big data Zucco/dataset_modelo/v2/`.
 2. `notebooks/CancerVerso_V3_unet.ipynb` (GPU): verifica las huellas MD5, entrena la U-Net y la evalúa. Los resultados quedan en `MyDrive/Big data Zucco/modelos/unet_<gpu>/`. La corrida entregada, con todas sus salidas, es `CancerVerso_V3_unet_corrida_T4.ipynb`.
+3. `notebooks/CancerVerso_V3b_metricas.ipynb` (GPU, ~5 min): métricas extra del mismo modelo. Guarda `metricas_extra.json` y `matrices_confusion.png` en `modelos/unet_t4/`; el JSON se copia a `resultados/`. La corrida ejecutada está en Drive como `CancerVerso_V3b_metricas_corrida_L4.ipynb`.
 
 **Levantar la app (local):**
 
@@ -182,7 +196,9 @@ Los resultados del modelo sí vienen en el repositorio, en `resultados/` (cifras
 
 ```
 resultados/unet_t4.json      métricas de la U-Net en test, bitácora de entrenamiento y HTB% real vs predicho
-resultados/ejemplos_test.png 4 cortes de test: experto vs U-Net (la misma imagen del notebook V3)
+resultados/ejemplos_test.png 4 cortes de test: referencia vs U-Net (la misma imagen del notebook V3; en la imagen dice "experto")
+resultados/metricas_extra.json matrices de confusión, precisión, recall, IoU y falsas alarmas (notebook V3b)
+resultados/revision_duplicados.json CTs duplicados entre entrenamiento y prueba, y métricas sin ellos (revisar_duplicados.py)
 resultados/proceso.json      cifras del proceso de datos (de docs/INGENIERIA.md)
 ```
 
@@ -202,6 +218,8 @@ notebooks/CancerVerso_V1_ampliacion.ipynb     versión del V1 que se usó en Col
 notebooks/CancerVerso_V2_datos_modelo.ipynb   dataset 2D para el modelo (Colab)
 notebooks/CancerVerso_V3_unet.ipynb           U-Net: entrenamiento y evaluación (Colab)
 notebooks/CancerVerso_V3_unet_corrida_T4.ipynb  corrida entregada de la U-Net, con resultados
+notebooks/CancerVerso_V3b_metricas.ipynb      métricas extra de la U-Net: matrices de confusión, precisión y recall (Colab)
+notebooks/revisar_duplicados.py                CTs duplicados entre entrenamiento y prueba, y métricas sin ellos
 docs/KDD.md                    proceso KDD del proyecto
 docs/DATOS.md                  diccionario de datos y linaje
 docs/INGENIERIA.md             cómo se procesaron los datos
@@ -216,6 +234,8 @@ capturas/                      imágenes del dashboard
 - Se procesaron a detalle 300.9 GB de los 3.04 TB; las estadísticas por órgano sí cubren el dataset completo.
 - El visor de cortes y 3D muestra 20 CTs de demostración, no los 2,336.
 - Las cifras del modelo son algo optimistas: la validación se usó para elegir la mejor época y solo se evalúan cortes con hígado.
+- La referencia del hígado no es humana (TotalSegmentator): el Dice de hígado mide coincidencia con esa herramienta. La de tumor sí es de radiólogos.
+- **CTs duplicados en el dataset:** 291 de los 2,336 CTs tienen un gemelo idéntico (mismo volumen de tumor y de hígado, mismas lesiones y cortes), casi siempre con **otro ID de paciente** y fechas corridas: parece la misma tomografía publicada dos veces. La separación por paciente no los detecta, así que 32 de los 346 CTs de prueba tienen su gemelo en entrenamiento o validación. En esos 32 el modelo saca Dice de tumor 0.83; **sin ellos** (314 CTs) las cifras son Dice de tumor 0.625, precisión 0.69, recall 0.57, correlación del HTB% 0.84 y error mediano 0.69 puntos. Detalle: `notebooks/revisar_duplicados.py` y `resultados/revision_duplicados.json`. La solución completa es separar por grupo de gemelos y volver a entrenar.
 - El semáforo de HTB% y la regla de tendencia son criterios provisionales del equipo.
 
 ## 9. Trabajo futuro y apoyo que nos ayudaría

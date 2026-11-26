@@ -11,7 +11,9 @@ Busca los datos en la carpeta "datos", junto a este archivo:
     datos/procesados/higado/     un volumen reducido por cada CT procesado (notebook V1)
 Y los resultados del modelo en la carpeta "resultados" (esta sí va en GitHub, no trae datos de pacientes):
     resultados/unet_t4.json      métricas de la U-Net en test (notebook V3)
-    resultados/ejemplos_test.png cortes de test: experto vs U-Net (notebook V3)
+    resultados/ejemplos_test.png cortes de test: referencia vs U-Net (notebook V3)
+    resultados/metricas_extra.json matriz de confusión, precisión y recall (notebook V3b; opcional)
+    resultados/revision_duplicados.json CTs duplicados entre entrenamiento y prueba (opcional)
     resultados/proceso.json      cifras del proceso de datos (docs/INGENIERIA.md)
 """
 import json
@@ -138,7 +140,15 @@ def cargar_resultados():
         return None
     modelo = json.loads((RESULTADOS / "unet_t4.json").read_text(encoding="utf-8"))
     proceso = json.loads((RESULTADOS / "proceso.json").read_text(encoding="utf-8"))
-    return {"modelo": modelo, "proceso": proceso}
+    # Métricas extra del notebook V3b. Si todavía no existen, la app sigue igual sin esa sección.
+    extra = None
+    if (RESULTADOS / "metricas_extra.json").exists():
+        extra = json.loads((RESULTADOS / "metricas_extra.json").read_text(encoding="utf-8"))
+    # Revisión de CTs duplicados entre entrenamiento y prueba (notebooks/revisar_duplicados.py). Opcional.
+    duplicados = None
+    if (RESULTADOS / "revision_duplicados.json").exists():
+        duplicados = json.loads((RESULTADOS / "revision_duplicados.json").read_text(encoding="utf-8"))
+    return {"modelo": modelo, "proceso": proceso, "extra": extra, "duplicados": duplicados}
 
 
 @st.cache_data
@@ -383,7 +393,7 @@ def figura_seguimiento(curva, dia_actual, vol_actual):
 
 
 def figura_htb_real_vs_modelo(puntos):
-    """Cada punto es un CT de test: HTB% real (experto) contra el HTB% que calcula la U-Net."""
+    """Cada punto es un CT de test: HTB% de la referencia contra el HTB% que calcula la U-Net."""
     real = puntos["htb_real"]
     modelo = puntos["htb_pred"]
     tope = max(max(real), max(modelo)) + 3
@@ -397,7 +407,7 @@ def figura_htb_real_vs_modelo(puntos):
     fig.add_trace(go.Scatter(x=real, y=modelo, mode="markers", hovertext=textos, hoverinfo="text",
                              marker=dict(size=8, color=CIAN, opacity=0.6, line=dict(color=PANEL, width=0.5))))
     estilo_grafica(fig, 380)
-    fig.update_xaxes(title="HTB% real (experto)", gridcolor=BORDE, zeroline=False, range=[0, tope])
+    fig.update_xaxes(title="HTB% de la referencia", gridcolor=BORDE, zeroline=False, range=[0, tope])
     fig.update_yaxes(title="HTB% de la U-Net", gridcolor=BORDE, zeroline=False, range=[0, tope])
     return fig
 
@@ -442,6 +452,17 @@ def figura_entrenamiento(bitacora, mejor_epoca):
     fig.update_layout(showlegend=True, legend=dict(orientation="h", y=1.12, x=0))
     fig.update_xaxes(title="Época", gridcolor=BORDE, dtick=1)
     fig.update_yaxes(title="Dice en validación", gridcolor=BORDE, range=[0.5, 1])
+    return fig
+
+
+def figura_matriz(valores, textos, filas, columnas, alto):
+    """Matriz de confusión como cuadrícula de colores. Filas = referencia, columnas = modelo."""
+    fig = go.Figure(go.Heatmap(z=valores, x=columnas, y=filas, text=textos, texttemplate="%{text}",
+                               textfont=dict(size=15), colorscale=[[0, PANEL], [1, CIAN]], showscale=False,
+                               xgap=3, ygap=3, hoverinfo="skip"))
+    estilo_grafica(fig, alto)
+    fig.update_xaxes(title="Lo que pintó la U-Net", side="top")
+    fig.update_yaxes(title="Lo que marca la referencia", autorange="reversed")
     return fig
 
 
@@ -741,19 +762,22 @@ def pestana_modelo(resultados):
                 + miles(m["cts"]["test"]) + " CTs de " + miles(m["pacientes"]["test"]) + " pacientes que el modelo nunca vio</span>.</p>",
                 unsafe_allow_html=True)
     tarjetas([
-        (f"{t['dice_global_higado']:.2f}", "Dice de hígado (1 = perfecto)", ""),
-        (f"{t['dice_global_tumor']:.2f}", "Dice de tumor", ""),
-        (f"{t['htb_correlacion']:.2f}", "correlación del HTB% U-Net vs experto", ""),
+        (f"{t['dice_global_higado']:.2f}", "Dice de hígado (vs TotalSegmentator)", ""),
+        (f"{t['dice_global_tumor']:.2f}", "Dice de tumor (vs radiólogos)", ""),
+        (f"{t['htb_correlacion']:.2f}", "correlación del HTB% U-Net vs referencia", ""),
         (f"{t['htb_error_absoluto_mediano']:.2f}", "error mediano del HTB%", "puntos"),
         (miles(m["cortes"]["test"]), "cortes predichos en " + f"{t['segundos_prediccion']:.0f}" + " s (GPU T4)", ""),
     ])
-    st.markdown('<p class="nota"><span class="fuerte">Dice</span> mide cuánto se enciman lo que pinta el modelo y lo que pintó el experto: '
-                "2 × (píxeles en común) ÷ (píxeles del modelo + píxeles del experto). 1 es perfecto y 0 es nada en común.</p>",
+    st.markdown('<p class="nota"><span class="fuerte">Dice</span> mide cuánto se enciman lo que pinta el modelo y la referencia: '
+                "2 × (píxeles en común) ÷ (píxeles del modelo + píxeles de la referencia). 1 es perfecto y 0 es nada en común.<br>"
+                '<span class="fuerte">Referencia</span> es contra lo que se califica, no la verdad absoluta: el <span class="fuerte">tumor</span> lo anotaron '
+                "radiólogos (CancerVerse) y el <span class=\"fuerte\">hígado</span> sale de TotalSegmentator, porque el dataset no trae máscara de hígado. "
+                "Por eso el Dice que importa es el de tumor.</p>",
                 unsafe_allow_html=True)
 
     # ── Fila 1: cortes de ejemplo ──
     st.write("")
-    st.markdown('<p class="titulo-sec">Experto vs U-Net en 4 cortes de test</p><p class="sub-sec">Arriba lo que anotó el experto; abajo lo que '
+    st.markdown('<p class="titulo-sec">Referencia vs U-Net en 4 cortes de test</p><p class="sub-sec">Arriba la referencia (en la imagen dice "experto"); abajo lo que '
                 "predijo la U-Net. Cian: hígado. Rojo: tumor. Los cortes se eligieron al azar con semilla fija entre los que tienen tumor.</p>",
                 unsafe_allow_html=True)
     st.image(str(RESULTADOS / "ejemplos_test.png"), width="stretch")
@@ -784,6 +808,16 @@ def pestana_modelo(resultados):
     with derecha:
         st.markdown('<p class="titulo-sec">Dónde falla</p><p class="sub-sec">Error del HTB% según cuánta carga tumoral tiene el CT. '
                     "Diferencia negativa = el modelo se queda corto.</p>", unsafe_allow_html=True)
+        # Texto extra si existe la revisión de CTs duplicados
+        texto_duplicados = ""
+        dup = resultados["duplicados"]
+        if dup is not None:
+            sin = dup["sin_gemelos"]
+            texto_duplicados = ("<br><br>" + '<span class="fuerte">CTs duplicados.</span> ' + str(dup["cts_prueba_con_gemelo_fuera"])
+                                + " CTs de test tienen un gemelo idéntico (la misma tomografía con otro ID de paciente) en entrenamiento o validación. "
+                                + "Sin ellos (" + str(sin["cts"]) + " CTs): Dice de tumor " + f"{sin['dice_tumor']:.3f}"
+                                + ", correlación del HTB% " + f"{sin['htb_correlacion']:.3f}" + " y error mediano "
+                                + f"{sin['htb_error_absoluto_mediano']:.2f}" + " puntos.")
         tabla = pd.DataFrame(m["htb_por_rango"])
         tabla.columns = ["HTB% real", "CTs", "Error mediano (puntos)", "Diferencia mediana (puntos)"]
         st.dataframe(tabla, hide_index=True, width="stretch")
@@ -793,7 +827,69 @@ def pestana_modelo(resultados):
                     "Los tumores chicos casi no los encuentra (Dice 0.13).<br><br>"
                     '<span class="fuerte">Límites.</span> Solo se evalúan cortes que tienen hígado, y la validación se usó para elegir la mejor época, '
                     "así que las cifras son algo optimistas. La app muestra la evaluación ya hecha: Streamlit Cloud no tiene GPU para correr el modelo en vivo."
-                    "</p></div>", unsafe_allow_html=True)
+                    + texto_duplicados + "</p></div>", unsafe_allow_html=True)
+
+    # ── Fila 4: matrices de confusión, precisión y recall (notebook V3b) ──
+    extra = resultados["extra"]
+    if extra is None:
+        return
+    tumor = extra["por_clase"]["tumor"]
+    corte = extra["por_corte"]
+    trampa = extra["trampa_exactitud"]
+    cts_con_tumor = 0
+    for valor in m["puntos_test"]["htb_real"]:
+        if valor > 0:
+            cts_con_tumor += 1
+    st.write("")
+    st.markdown('<p class="titulo-sec">¿Cómo se equivoca? Matriz de confusión, precisión y recall</p>'
+                '<p class="sub-sec">Mismo modelo y mismo test. El Dice dice cuánto se enciman; estas medidas dicen '
+                "si el modelo pinta de más o si se le escapa el tumor.</p>", unsafe_allow_html=True)
+    tarjetas([
+        (f"{tumor['precision']:.2f}", "precisión de tumor: de lo que pintó, cuánto era tumor", ""),
+        (f"{tumor['recall']:.2f}", "recall de tumor: del tumor que había, cuánto encontró", ""),
+        (f"{tumor['iou']:.2f}", "IoU de tumor (intersección ÷ unión)", ""),
+        (f"{100 * corte['sensibilidad']:.0f}", "de los cortes con tumor, los que detectó", "%"),
+        (f"{100 * corte['especificidad']:.0f}", "de los cortes sin tumor, los que dejó en paz", "%"),
+    ])
+    st.write("")
+    izquierda, derecha = st.columns(2, gap="large")
+    with izquierda:
+        st.markdown('<p class="titulo-sec">Píxel por píxel</p><p class="sub-sec">Cada fila suma 100%: de lo que marca la referencia, '
+                    "qué pintó el modelo. La diagonal son los aciertos.</p>", unsafe_allow_html=True)
+        pct = extra["matriz_pixeles_pct_fila"]
+        textos = []
+        for fila in pct:
+            textos.append([f"{v:.1f}%" for v in fila])
+        clases = ["Fondo", "Hígado", "Tumor"]
+        st.plotly_chart(figura_matriz(pct, textos, clases, clases, 340), width="stretch", config={"displayModeBar": False})
+    with derecha:
+        st.markdown('<p class="titulo-sec">Corte por corte: ¿tiene tumor?</p><p class="sub-sec">' + miles(corte["cortes"])
+                    + " cortes de test. Cuenta como \"con tumor\" si hay al menos 1 píxel de tumor.</p>", unsafe_allow_html=True)
+        valores = [[corte["vp"], corte["fn"]], [corte["fp"], corte["vn"]]]
+        textos = [[miles(corte["vp"]) + "<br>acierta", miles(corte["fn"]) + "<br>se le escapa"],
+                  [miles(corte["fp"]) + "<br>falsa alarma", miles(corte["vn"]) + "<br>acierta"]]
+        st.plotly_chart(figura_matriz(valores, textos, ["Con tumor", "Sin tumor"], ["Con tumor", "Sin tumor"], 340),
+                        width="stretch", config={"displayModeBar": False})
+    # Tamaño de las falsas alarmas y qué pasa con otro umbral (sección 6b del notebook V3b)
+    texto_alarmas = ""
+    if "falsas_alarmas" in extra and "umbrales_corte" in extra:
+        con_50 = None
+        for fila in extra["umbrales_corte"]:
+            if fila["min_pixeles"] == 50:
+                con_50 = fila
+        texto_alarmas = ("<br><br>" + '<span class="fuerte">Las falsas alarmas son manchas chicas.</span> Basta 1 píxel para que un corte cuente como '
+                         "\"con tumor\", y la mitad de las falsas alarmas mide " + f"{extra['falsas_alarmas']['pixeles_mediana']:.0f}"
+                         + " píxeles o menos (de 65,536 que tiene el corte).")
+        if con_50 is not None:
+            texto_alarmas = (texto_alarmas + " Si se le exigen al menos 50 píxeles para avisar, la especificidad sube a "
+                             + f"{100 * con_50['especificidad']:.0f}" + "% y la sensibilidad baja a " + f"{100 * con_50['sensibilidad']:.0f}" + "%.")
+    st.markdown('<div class="panel" style="margin-top:.6rem"><p class="sub-sec" style="font-size:.88rem;line-height:1.6;margin:0">'
+                '<span class="fuerte">Por qué no usamos la exactitud.</span> Solo el ' + f"{trampa['pct_pixeles_tumor']:.1f}"
+                + "% de los píxeles es tumor. Un modelo que pintara todo como fondo tendría una exactitud de "
+                + f"{100 * trampa['exactitud_todo_fondo']:.1f}" + "% sin encontrar ni un tumor (la U-Net saca "
+                + f"{100 * trampa['exactitud_unet']:.1f}" + "%). Por eso medimos con Dice, precisión y recall.<br><br>"
+                '<span class="fuerte">Por qué por corte y no por CT.</span> Casi todos los CTs de test tienen tumor (' + str(cts_con_tumor) + ' de ' + str(len(m["puntos_test"]["htb_real"])) + '), '
+                "así que una matriz por CT casi no tendría casos sin tumor." + texto_alarmas + "</p></div>", unsafe_allow_html=True)
 
 
 # ───────────────────────── 9. Pestaña: cómo lo hicimos ─────────────────────────

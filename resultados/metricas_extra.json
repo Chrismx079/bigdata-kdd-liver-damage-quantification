@@ -1,0 +1,114 @@
+{
+  "_nota": "Métricas extra de la U-Net en test (notebook CancerVerso_V3b_metricas). Mismo modelo (mejor.pt) y mismo test que la V3. Cifras agregadas, sin IDs. Corrida en GPU NVIDIA L4 (bf16): por eso el Dice de tumor sale 0.6523 contra 0.6531 de la V3 en T4 (fp16).",
+  "gpu": "NVIDIA L4",
+  "matriz_pixeles": [
+    [
+      1667250802,
+      3160687,
+      392925
+    ],
+    [
+      3310615,
+      108305635,
+      1886190
+    ],
+    [
+      396293,
+      3289638,
+      5596463
+    ]
+  ],
+  "matriz_pixeles_pct_fila": [
+    [
+      99.79,
+      0.19,
+      0.02
+    ],
+    [
+      2.92,
+      95.42,
+      1.66
+    ],
+    [
+      4.27,
+      35.44,
+      60.29
+    ]
+  ],
+  "por_clase": {
+    "fondo": {
+      "precision": 0.9978,
+      "recall": 0.9979,
+      "iou": 0.9957,
+      "dice": 0.9978,
+      "pixeles_experto": 1670804414
+    },
+    "hígado": {
+      "precision": 0.9438,
+      "recall": 0.9542,
+      "iou": 0.9029,
+      "dice": 0.949,
+      "pixeles_experto": 113502440
+    },
+    "tumor": {
+      "precision": 0.7106,
+      "recall": 0.6029,
+      "iou": 0.4841,
+      "dice": 0.6523,
+      "pixeles_experto": 9282394
+    }
+  },
+  "por_corte": {
+    "cortes": 27368,
+    "con_tumor": 12294,
+    "sin_tumor": 15074,
+    "vp": 11681,
+    "fn": 613,
+    "fp": 7851,
+    "vn": 7223,
+    "sensibilidad": 0.9501,
+    "especificidad": 0.4792,
+    "precision": 0.598,
+    "exactitud": 0.6907,
+    "f1": 0.734
+  },
+  "falsas_alarmas": {
+    "cortes": 7851,
+    "pixeles_mediana": 23,
+    "pixeles_p75": 71,
+    "pixeles_p90": 199
+  },
+  "umbrales_corte": [
+    {
+      "min_pixeles": 1,
+      "especificidad": 0.4792,
+      "sensibilidad": 0.9501
+    },
+    {
+      "min_pixeles": 10,
+      "especificidad": 0.6343,
+      "sensibilidad": 0.9078
+    },
+    {
+      "min_pixeles": 50,
+      "especificidad": 0.8322,
+      "sensibilidad": 0.7566
+    },
+    {
+      "min_pixeles": 100,
+      "especificidad": 0.901,
+      "sensibilidad": 0.6287
+    },
+    {
+      "min_pixeles": 200,
+      "especificidad": 0.9479,
+      "sensibilidad": 0.4693
+    }
+  ],
+  "trampa_exactitud": {
+    "exactitud_unet": 0.9931,
+    "exactitud_todo_fondo": 0.9315,
+    "pct_pixeles_tumor": 0.518
+  },
+  "creado": "2026-11-26T06:03:58"
+}

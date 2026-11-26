@@ -9,7 +9,7 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 | 1. Selección | Elegir dataset, órgano y casos | Notebook, secciones 2, 3 y 6 | Hecho (3 partes) |
 | 2. Preprocesamiento | Limpiar metadatos y filtrar series | Notebook, secciones 3, 5 y 6 | Hecho |
 | 3. Transformación | Medir máscaras, segmentar hígado, reducir volúmenes; dataset 2D para la U-Net | V1, secciones 4, 8 y 9 · V2 | Hecho: 2,336 CTs; dataset 2D de 2,264 CTs |
-| 4. Minería de datos | TotalSegmentator + U-Net 2D propia (MONAI) y métricas | V1, sección 8 · V3 | Hecho (U-Net entrenada en T4) |
+| 4. Minería de datos | TotalSegmentator + U-Net 2D propia (MONAI) y métricas | V1, sección 8 · V3 · V3b | Hecho (U-Net entrenada en T4) |
 | 5. Interpretación | Dashboard (con pestañas Modelo IA y Cómo lo hicimos), control de calidad, seguimiento | `app.py` · `resultados/` · Notebook, secciones 10 y 11 | Hecho para hígado |
 
 ---
@@ -60,17 +60,20 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 | Dice de hígado (global / mediana por CT) | 0.949 / 0.969 |
 | Dice de tumor (global / mediana por CT) | 0.653 / 0.521 |
 | Dice de tumor en tumores chicos / grandes (cuartil inferior / superior) | 0.13 / 0.74 |
+| Tumor por píxel: precisión / recall / IoU (notebook V3b) | 0.71 / 0.60 / 0.48 |
+| Por corte, ¿tiene tumor?: sensibilidad / especificidad (1 píxel basta; con 50 píxeles) | 95% / 48% (76% / 83%) |
 | HTB% predicho vs real (correlación) | 0.85 |
 | HTB% predicho vs real (error absoluto mediano) | 0.66 puntos |
 
-- **Lectura:** el hígado se segmenta casi perfecto; el tumor depende de su tamaño. El HTB%, la variable del proyecto, sale cerca del real en la mayoría de los CTs, pero el modelo subestima los casos con más de 40% de carga tumoral.
+- **Referencia:** el tumor se compara contra las máscaras de radiólogos de CancerVerse; el hígado, contra TotalSegmentator (el dataset no trae máscara de hígado). Es la mejor respuesta disponible, no la verdad absoluta.
+- **Lectura:** el hígado coincide casi perfecto con TotalSegmentator; el tumor depende de su tamaño y el modelo se queda corto más de lo que inventa (precisión 0.71 > recall 0.60). El HTB%, la variable del proyecto, sale cerca del real en la mayoría de los CTs, pero el modelo subestima los casos con más de 40% de carga tumoral.
 - **Límites:** solo se evalúan cortes con hígado y la validación se usó para elegir la mejor época, así que las cifras son algo optimistas.
 
 ## 5. Interpretación y evaluación
 
 - **Dashboard (Streamlit):** portada con las cifras del dataset, menú de 13 órganos y página de hígado con tres pestañas:
   - **Paciente:** visor de cortes, reconstrucción 3D, medidor de HTB% y curva de seguimiento.
-  - **Modelo IA:** métricas de la U-Net en test, 4 cortes experto vs U-Net, HTB% real vs predicho, Dice por tamaño de tumor, curva de entrenamiento y dónde falla.
+  - **Modelo IA:** métricas de la U-Net en test, 4 cortes referencia vs U-Net, HTB% real vs predicho, Dice por tamaño de tumor, curva de entrenamiento, dónde falla y matrices de confusión con precisión y recall.
   - **Cómo lo hicimos:** las 5 etapas del KDD, tamaño de los datos en cada etapa, reparto entre 4 cuentas, benchmark de lectura, precisión mixta y problemas resueltos.
 - **Control de calidad visual:** imágenes de todos los casos donde más del 10% del tumor quedó fuera de la máscara de hígado. Con las 3 partes son 445 de 2,336 CTs (19%); en esos casos el HTB% puede quedar bajo y conviene revisarlos.
 - **Límites que el propio dashboard declara:**
@@ -93,7 +96,7 @@ Este documento sigue las cinco etapas del proceso KDD (Knowledge Discovery in Da
 | Seguimiento más largo | 3,497 días (unos 9.6 años) |
 | HTB% mediano | 1.8% (40 CTs arriba de 50%) |
 | Dataset 2D para la U-Net | 180,238 cortes · 2,264 CTs · 23.6 GB en 90 shards |
-| U-Net en prueba | Dice tumor 0.65 · Dice hígado 0.95 · HTB% r = 0.85 |
+| U-Net en prueba | Dice tumor 0.65 · Dice hígado 0.95 · HTB% r = 0.85 · tumor: precisión 0.71, recall 0.60 |
 | Meta mínima / deseable | 300 GB / 1 TB |
 
 ## Siguientes pasos
